@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 2.6)
+
+PROJECT(usync C)
+ADD_DEFINITIONS(-Os -ggdb -Wextra -Wall -Werror --std=gnu99 -Wmissing-declarations -Wno-unused-parameter)
+
+SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
+
+SET(SOURCES main.c config.c proto.c)
+
+FIND_LIBRARY(ubus NAMES ubus)
+FIND_LIBRARY(blobmsg_json NAMES blobmsg_json)
+FIND_LIBRARY(ubox NAMES ubox)
+FIND_LIBRARY( websockets NAMES websockets)
+FIND_PATH(ubus_include_dir NAMES libubus.h)
+FIND_PATH(ubus_include_dir NAMES libubus.h)
+FIND_PATH(libwebsockets_include_dir NAMES libwebsockets.h)
+INCLUDE_DIRECTORIES(${ubox_include_dir} ${ubus_include_dir} ${libwebsockets_include_dir})
+
+ADD_EXECUTABLE(usync ${SOURCES})
+
+TARGET_LINK_LIBRARIES(usync ${ubox} ${ubus} ${websockets} ${blobmsg_json})
+
+INSTALL(TARGETS usync
+	RUNTIME DESTINATION sbin
+)
