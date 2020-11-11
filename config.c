@@ -100,7 +100,7 @@ config_init(int apply)
 
 	uuid_active = 0;
 
-	snprintf(path, PATH_MAX, "%s/usync.cfg.*", client.config);
+	snprintf(path, PATH_MAX, "%s/usync.cfg.*", USYNC_CONFIG);
 	if (glob(path, 0, NULL, &gl))
                 return;
 	if (!gl.gl_pathc)
@@ -111,13 +111,13 @@ config_init(int apply)
 	if (apply)
 		config_apply();
 
-	snprintf(path, PATH_MAX, "%s/usync.active", client.config);
+	snprintf(path, PATH_MAX, "%s/usync.active", USYNC_CONFIG);
 	if (readlink(path, link, PATH_MAX) < 0) {
 		ULOG_INFO("no active symlink found\n");
 		goto out;
 	}
 
-	snprintf(path, PATH_MAX, "%s/%s", client.config, basename(link));
+	snprintf(path, PATH_MAX, "%s/%s", USYNC_CONFIG, basename(link));
 	if (stat(path, &s)) {
 		ULOG_INFO("active config not found\n");
 		goto out;

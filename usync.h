@@ -29,15 +29,16 @@
 #include <libubox/blobmsg.h>
 #include <libubox/blobmsg_json.h>
 
+#define USYNC_CERT	"/etc/usync/cert.pem"
+#define USYNC_CONFIG	 "/etc/usync/"
+
 struct client_config {
 	const char *server;
 	int port;
-	const char *cert;
 	const char *user;
 	const char *pass;
 	const char *path;
 	const char *serial;
-	const char *config;
 };
 extern struct client_config client;
 

@@ -95,7 +95,7 @@ proto_send_capabilities(struct lws *wsi)
 	char path[PATH_MAX] = { };
 	char *capab;
 
-	snprintf(path, PATH_MAX, "%s/capabilities.json", client.config);
+	snprintf(path, PATH_MAX, "%s/capabilities.json", USYNC_CONFIG);
 
 	blob_buf_init(&proto, 0);
 	if (!blobmsg_add_json_from_file(&proto, path)) {

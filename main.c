@@ -46,9 +46,7 @@ struct client_config client = {
 	.path = "/",
 	.user = "test",
 	.pass = "test",
-	.cert = "/etc/usync/cert.pem",
 	.serial = "00:11:22:33:44:55",
-	.config = "/etc/usync/",
 };
 
 static int
@@ -239,8 +237,6 @@ static int print_usage(const char *daemon)
 			"\t-p <password>\n"
 			"\t-s <server>\n"
 			"\t-P <port>\n"
-			"\t-c <certificate>\n"
-			"\t-C <config>\n"
 			"\t-v <venue>\n", daemon);
 	return -1;
 }
@@ -253,7 +249,7 @@ int main(int argc, char **argv)
 
 	ulog_open(ULOG_STDIO | ULOG_SYSLOG, LOG_DAEMON, "usync");
 
-	while ((ch = getopt(argc, argv, "S:u:p:s:P:c:v:C:")) != -1) {
+	while ((ch = getopt(argc, argv, "S:u:p:s:P:v:")) != -1) {
 		switch (ch) {
 		case 'u':
 			client.user = optarg;
@@ -267,17 +263,11 @@ int main(int argc, char **argv)
 		case 'P':
 			client.port = atoi(optarg);
 			break;
-		case 'c':
-			client.cert = optarg;
-			break;
 		case 'v':
 			client.path = optarg;
 			break;
 		case 'S':
 			client.serial = optarg;
-			break;
-		case 'C':
-			client.config = optarg;
 			break;
 		case 'h':
 		default:
@@ -292,7 +282,7 @@ int main(int argc, char **argv)
 	memset(&info, 0, sizeof info);
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-	info.ssl_cert_filepath = client.cert;
+	info.ssl_cert_filepath = USYNC_CERT;
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
 
