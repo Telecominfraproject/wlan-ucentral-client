@@ -41,7 +41,7 @@ struct client_config {
 };
 extern struct client_config client;
 
-void config_init(void);
+void config_init(int apply);
 int config_get_uuid_latest(void);
 int config_get_uuid_active(void);
 int config_verify(uint32_t uuid, struct blob_attr *attr);

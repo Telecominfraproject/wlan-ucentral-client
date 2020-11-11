@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	config_init();
+	config_init(1);
 
 	lws_set_log_level(logs, NULL);
 

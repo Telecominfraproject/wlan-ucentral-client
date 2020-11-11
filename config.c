@@ -46,9 +46,6 @@ config_get_uuid_latest(void)
 int
 config_get_uuid_active(void)
 {
-	if (uuid_active == uuid_latest)
-		return 0;
-
 	return uuid_active;
 }
 
@@ -94,7 +91,7 @@ config_apply(void)
 }
 
 void
-config_init(void)
+config_init(int apply)
 {
 	char path[PATH_MAX] = { };
 	char link[PATH_MAX] = { };
@@ -111,21 +108,26 @@ config_init(void)
 
 	uuid_latest = config_load(gl.gl_pathv[gl.gl_pathc - 1]);
 
+	if (apply)
+		config_apply();
+
 	snprintf(path, PATH_MAX, "%s/usync.active", client.config);
-	if (readlink(path, link, PATH_MAX) < 0)
+	if (readlink(path, link, PATH_MAX) < 0) {
+		ULOG_INFO("no active symlink found\n");
 		goto out;
+	}
 
 	snprintf(path, PATH_MAX, "%s/%s", client.config, basename(link));
-	if (stat(path, &s))
+	if (stat(path, &s)) {
+		ULOG_INFO("active config not found\n");
 		goto out;
+	}
 
 	uuid_active = config_load(path);
 
 out:
 	globfree(&gl);
-	ULOG_INFO("config_init latest:%d active:%d\n", uuid_latest, uuid_active ? uuid_active : uuid_latest);
-
-	config_apply();
+	ULOG_INFO("config_init latest:%d active:%d\n", uuid_latest, uuid_active);
 }
 
 int
@@ -158,15 +160,13 @@ config_verify(uint32_t uuid, struct blob_attr *attr)
 	ret = system(buf);
 	ret = WEXITSTATUS(ret);
 
-	if (!ret)
-		config_init();
-
 err:
 	if (cfg)
 		free(cfg);
 	if (fp)
 		fclose(fp);
 
+	config_init(!ret);
 
 	return ret;
 }

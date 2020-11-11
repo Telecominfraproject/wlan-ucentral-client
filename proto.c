@@ -81,7 +81,7 @@ proto_send_heartbeat(struct lws *wsi)
 	int uuid_latest = config_get_uuid_latest();
 	int uuid_active = config_get_uuid_active();
 
-	if (!uuid_active)
+	if (uuid_active == uuid_latest)
 		proto_send(wsi, "{\"serial\": \"%s\", \"uuid\": %d}",
 			   client.serial, uuid_latest);
 	else
