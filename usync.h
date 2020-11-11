@@ -31,6 +31,7 @@
 
 #define USYNC_CERT	"/etc/usync/cert.pem"
 #define USYNC_CONFIG	 "/etc/usync/"
+#define USYNC_STATE	 "/tmp/usync.state"
 
 struct client_config {
 	const char *server;
@@ -39,6 +40,7 @@ struct client_config {
 	const char *pass;
 	const char *path;
 	const char *serial;
+	int reporting;
 };
 extern struct client_config client;
 
@@ -49,4 +51,5 @@ int config_verify(uint32_t uuid, struct blob_attr *attr);
 
 void proto_send_heartbeat(struct lws *wsi);
 void proto_send_capabilities(struct lws *wsi);
+void proto_send_state(struct lws *wsi);
 void proto_handle(struct lws *wsi, char *cmd);

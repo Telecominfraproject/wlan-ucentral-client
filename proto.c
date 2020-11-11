@@ -87,6 +87,7 @@ proto_send_heartbeat(struct lws *wsi)
 	else
 		proto_send(wsi, "{\"serial\": \"%s\", \"uuid\": %d, \"active\": %d }",
 			   client.serial, uuid_latest, uuid_active);
+	ULOG_INFO("xmit heartbeat\n");
 }
 
 void
@@ -109,7 +110,37 @@ proto_send_capabilities(struct lws *wsi)
 		return;
 	}
 	proto_send(wsi, "{\"serial\": \"%s\", \"capab\": %s}", client.serial, capab);
+	ULOG_INFO("xmit capabilities\n");
 	free(capab);
+}
+
+void
+proto_send_state(struct lws *wsi)
+{
+	char *state;
+	int ret;
+
+	ret = system("/usr/sbin/usync_state.sh");
+	ret = WEXITSTATUS(ret);
+	if (ret) {
+		ULOG_ERR("failed to generate state file\n");
+		return;
+	}
+
+	blob_buf_init(&proto, 0);
+	if (!blobmsg_add_json_from_file(&proto, USYNC_STATE)) {
+		ULOG_ERR("failed to load state\n");
+		return;
+	}
+
+	state = blobmsg_format_json(proto.head, true);
+	if (!state) {
+		ULOG_ERR("failed to format state\n");
+		return;
+	}
+	proto_send(wsi, "{\"serial\": \"%s\", \"state\": %s}", client.serial, state);
+	ULOG_INFO("xmit state\n");
+	free(state);
 }
 
 void

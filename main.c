@@ -26,9 +26,10 @@
 static int reconnect_timeout;
 static struct lws_context *context;
 
+static struct uloop_timeout reporting;
 static struct uloop_timeout periodic;
 static struct uloop_fd sock;
-
+static struct lws *connected;
 
 struct per_vhost_data__minimal {
 	struct lws_context *context;
@@ -47,6 +48,7 @@ struct client_config client = {
 	.user = "test",
 	.pass = "test",
 	.serial = "00:11:22:33:44:55",
+	.reporting = 1,
 };
 
 static int
@@ -172,6 +174,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		vhd->client_wsi = NULL;
 		lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, get_reconnect_timeout());
+		connected = NULL;
 		break;
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
@@ -179,6 +182,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		reconnect_timeout = 1;
 		proto_send_capabilities(wsi);
 		proto_send_heartbeat(wsi);
+		connected = wsi;
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
@@ -190,6 +194,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		vhd->client_wsi = NULL;
 		lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, get_reconnect_timeout());
+		connected = NULL;
 		break;
 
 	case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
@@ -227,6 +232,15 @@ periodic_cb(struct uloop_timeout *t)
 	lws_service_fd(context, &pfd);
 	lws_service_tsi(context, -1, 0);
         uloop_timeout_set(t, 1000);
+}
+
+static void
+reporting_cb(struct uloop_timeout *t)
+{
+	if (connected)
+		proto_send_state(connected);
+
+        uloop_timeout_set(t, client.reporting * 60 * 1000);
 }
 
 static int print_usage(const char *daemon)
@@ -294,8 +308,9 @@ int main(int argc, char **argv)
 
 	uloop_init();
 	periodic.cb = periodic_cb;
-        uloop_timeout_add(&periodic);
         uloop_timeout_set(&periodic, 1000);
+	reporting.cb = reporting_cb;
+        uloop_timeout_set(&reporting, client.reporting * 60 * 1000);
 	lws_service(context, 0);
 	uloop_run();
 	uloop_done();
