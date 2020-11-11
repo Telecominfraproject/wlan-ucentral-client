@@ -3,18 +3,15 @@
 config=$1
 uuid=$2
 
-echo config:$config uuid:$uuid
-
 [ -f "$config" -a -n "$uuid" ] || {
-	echo "invalid paramters"
+	logger "usync_verify: invalid paramters"
 	exit 1
 }
 
-echo jsonschema $1 /usr/share/usync/usync.schema.json
-jsonschema $1 /usr/share/usync/usync.schema.json > /dev/null
+jsonschema $1 /usr/share/usync/usync.schema.json > /tmp/usync.verify
 
 [ $? -eq 0 ] || {
-	echo "schema failed"
+	logger "usync_verify: schema failed"
 	exit 1
 }
 
