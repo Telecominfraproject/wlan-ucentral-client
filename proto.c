@@ -86,7 +86,7 @@ proto_send_capabilities(void)
 }
 
 static void
-state_run_cb(int uuid)
+state_run_cb(time_t uuid)
 {
 	ULOG_ERR("running state task\n");
 

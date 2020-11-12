@@ -47,7 +47,7 @@ extern struct client_config client;
 
 struct task {
 	int run_time;
-	void (*run)(int uuid);
+	void (*run)(time_t uuid);
 	void (*complete)(int ret);
 };
 
@@ -55,8 +55,8 @@ extern struct runqueue runqueue;
 extern struct lws *websocket;
 extern time_t conn_time;
 
-extern uint32_t uuid_latest;
-extern uint32_t uuid_active;
+extern time_t uuid_latest;
+extern time_t uuid_active;
 
 void config_init(void);
 int config_verify(struct blob_attr *attr);
@@ -68,4 +68,4 @@ void proto_handle(char *cmd);
 
 void ubus_init(void);
 
-void task_run(const struct task *task, int uuid);
+void task_run(const struct task *task, time_t uuid);

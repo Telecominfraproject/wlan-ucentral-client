@@ -32,11 +32,11 @@ static const struct blobmsg_policy config_policy[__CONFIG_MAX] = {
 static struct blob_attr *config_tb[__CONFIG_MAX];
 static struct blob_buf cfg;
 
-static uint32_t uuid_applied;
-uint32_t uuid_latest = 0;
-uint32_t uuid_active = 0;
+static time_t uuid_applied;
+time_t uuid_latest = 0;
+time_t uuid_active = 0;
 
-static int
+static time_t
 config_load(const char *path)
 {
 	blob_buf_init(&cfg, 0);
@@ -62,17 +62,17 @@ config_apply(void)
 	if (uuid_latest && (uuid_latest == uuid_applied))
 		return;
 
-	ULOG_INFO("applying cfg:%d\n", uuid_latest);
-	snprintf(path, sizeof(path), "/usr/sbin/usync_apply.sh /etc/usync/usync.cfg.%010d", uuid_latest);
+	ULOG_INFO("applying cfg:%ld\n", uuid_latest);
+	snprintf(path, sizeof(path), "/usr/sbin/usync_apply.sh /etc/usync/usync.cfg.%010ld", uuid_latest);
 	ret = system(path);
 	ret = WEXITSTATUS(ret);
 
 	if (!ret) {
 		uuid_applied = uuid_latest;
-		ULOG_INFO("applied cfg:%d\n", uuid_latest);
+		ULOG_INFO("applied cfg:%ld\n", uuid_latest);
 		return;
 	}
-	ULOG_INFO("failed to apply cfg:%d\n", uuid_latest);
+	ULOG_INFO("failed to apply cfg:%ld\n", uuid_latest);
 	config_load(USYNC_LATEST);
 }
 
@@ -112,18 +112,18 @@ config_init(void)
 
 out:
 	globfree(&gl);
-	ULOG_INFO("config_init latest:%d active:%d\n", uuid_latest, uuid_active);
+	ULOG_INFO("config_init latest:%ld active:%ld\n", uuid_latest, uuid_active);
 	proto_send_heartbeat();
 }
 
 static void
-verify_run_cb(int uuid)
+verify_run_cb(time_t uuid)
 {
 	char str[64];
 
 	ULOG_ERR("running verify task\n");
 
-	sprintf(str, "%010d", uuid);
+	sprintf(str, "%010ld", uuid);
 	execlp("/usr/sbin/usync_verify.sh", "/usr/sbin/usync_verify.sh", USYNC_TMP, str, NULL);
 	exit(1);
 }
@@ -176,10 +176,9 @@ err:
 	if (fp)
 		fclose(fp);
 
-	fprintf(stderr, "%s:%s[%d]\n", __FILE__, __func__, __LINE__);
 	if (!ret &&
-	    (!uuid_active || uuid_active != blobmsg_get_u32(tb[CONFIG_UUID])))
-		task_run(&verify, blobmsg_get_u32(tb[CONFIG_UUID]));
+	    (!uuid_active || uuid_active != (time_t)blobmsg_get_u32(tb[CONFIG_UUID])))
+		task_run(&verify_task, blobmsg_get_u32(tb[CONFIG_UUID]));
 
 	return 0;
 }
