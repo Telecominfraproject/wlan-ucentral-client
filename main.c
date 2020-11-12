@@ -30,6 +30,7 @@ static struct uloop_timeout reporting;
 static struct uloop_timeout periodic;
 static struct uloop_fd sock;
 struct lws *websocket = NULL;
+time_t conn_time;
 
 struct per_vhost_data__minimal {
 	struct lws_context *context;
@@ -171,6 +172,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		ULOG_INFO("connection established\n");
 		reconnect_timeout = 1;
+		conn_time = time(NULL);
 		websocket = wsi;
 		proto_send_capabilities();
 		proto_send_heartbeat();
@@ -186,6 +188,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLIENT_CLOSED:
 		ULOG_INFO("connection closed\n");
 		websocket = NULL;
+		conn_time = time(NULL);
 		vhd->client_wsi = NULL;
 		lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, get_reconnect_timeout());
@@ -294,6 +297,7 @@ int main(int argc, char **argv)
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
 
+	conn_time = time(NULL);
 	context = lws_create_context(&info);
 	if (!context) {
 		ULOG_INFO("failed to start LWS context\n");
@@ -301,6 +305,7 @@ int main(int argc, char **argv)
 	}
 
 	uloop_init();
+	ubus_init();
 	periodic.cb = periodic_cb;
         uloop_timeout_set(&periodic, 1000);
 	reporting.cb = reporting_cb;

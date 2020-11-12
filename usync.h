@@ -45,6 +45,7 @@ struct client_config {
 extern struct client_config client;
 
 extern struct lws *websocket;
+extern time_t conn_time;
 
 extern uint32_t uuid_latest;
 extern uint32_t uuid_active;
@@ -56,3 +57,5 @@ void proto_send_heartbeat(void);
 void proto_send_capabilities(void);
 void proto_send_state(void);
 void proto_handle(char *cmd);
+
+void ubus_init(void);
