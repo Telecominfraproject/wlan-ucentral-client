@@ -168,15 +168,6 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		uloop_fd_delete(&sock);
 		return 0;
 
-	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		ULOG_ERR("connection error: %s\n",
-			 in ? (char *)in : "(null)");
-		websocket = NULL;
-		vhd->client_wsi = NULL;
-		lws_sul_schedule(vhd->context, 0, &vhd->sul,
-				 sul_connect_attempt, get_reconnect_timeout());
-		break;
-
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		ULOG_INFO("connection established\n");
 		reconnect_timeout = 1;
@@ -189,6 +180,9 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		proto_handle((char *) in);
 		break;
 
+	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
+		ULOG_ERR("connection error: %s\n",
+			 in ? (char *)in : "(null)");
 	case LWS_CALLBACK_CLIENT_CLOSED:
 		ULOG_INFO("connection closed\n");
 		websocket = NULL;
