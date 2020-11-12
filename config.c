@@ -54,26 +54,42 @@ config_load(const char *path)
 }
 
 static void
-config_apply(void)
+apply_run_cb(time_t uuid)
 {
-	char path[PATH_MAX] = { };
-	int ret;
+	char str[64];
 
-	if (uuid_latest && (uuid_latest == uuid_applied))
-		return;
+	ULOG_ERR("running verify task\n");
 
-	ULOG_INFO("applying cfg:%ld\n", uuid_latest);
-	snprintf(path, sizeof(path), "/usr/sbin/usync_apply.sh /etc/usync/usync.cfg.%010ld", uuid_latest);
-	ret = system(path);
-	ret = WEXITSTATUS(ret);
+	sprintf(str, "/etc/usync/usync.cfg.%010ld", uuid);
+	execlp("/usr/sbin/usync_apply.sh", "/usr/sbin/usync_apply.sh", str, NULL);
+	exit(1);
+}
 
-	if (!ret) {
-		uuid_applied = uuid_latest;
-		ULOG_INFO("applied cfg:%ld\n", uuid_latest);
+static void
+apply_complete_cb(int ret)
+{
+	if (ret) {
+		ULOG_ERR("verify task returned %d\n", ret);
+		config_init();
 		return;
 	}
-	ULOG_INFO("failed to apply cfg:%ld\n", uuid_latest);
-	config_load(USYNC_LATEST);
+	uuid_applied = uuid_latest;
+	ULOG_INFO("applied cfg:%ld\n", uuid_latest);
+}
+
+struct task apply_task = {
+	.run_time = 10,
+	.run = apply_run_cb,
+	.complete = apply_complete_cb,
+};
+
+static void
+config_apply(void)
+{
+	if (uuid_latest && (uuid_latest == uuid_applied))
+		return;
+	ULOG_INFO("applying cfg:%ld\n", uuid_latest);
+	task_run(&apply_task, uuid_latest);
 }
 
 void
@@ -138,7 +154,7 @@ verify_complete_cb(int ret)
 	config_init();
 }
 
-struct task verify = {
+struct task verify_task = {
 	.run_time = 10,
 	.run = verify_run_cb,
 	.complete = verify_complete_cb,
