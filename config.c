@@ -32,22 +32,9 @@ static const struct blobmsg_policy config_policy[__CONFIG_MAX] = {
 static struct blob_attr *config_tb[__CONFIG_MAX];
 static struct blob_buf cfg;
 
-static uint32_t uuid_latest;
-static uint32_t uuid_active;
 static uint32_t uuid_applied;
-
-
-int
-config_get_uuid_latest(void)
-{
-	return uuid_latest;
-}
-
-int
-config_get_uuid_active(void)
-{
-	return uuid_active;
-}
+uint32_t uuid_latest = 0;
+uint32_t uuid_active = 0;
 
 static int
 config_load(const char *path)

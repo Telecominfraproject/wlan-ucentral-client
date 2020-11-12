@@ -46,9 +46,10 @@ extern struct client_config client;
 
 extern struct lws *websocket;
 
+extern uint32_t uuid_latest;
+extern uint32_t uuid_active;
+
 void config_init(int apply);
-int config_get_uuid_latest(void);
-int config_get_uuid_active(void);
 int config_verify(uint32_t uuid, struct blob_attr *attr);
 
 void proto_send_heartbeat(void);

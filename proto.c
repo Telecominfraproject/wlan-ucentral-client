@@ -59,9 +59,6 @@ proto_send_blob(void)
 void
 proto_send_heartbeat(void)
 {
-	int uuid_latest = config_get_uuid_latest();
-	int uuid_active = config_get_uuid_active();
-
 	blob_buf_init(&proto, 0);
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_u32(&proto, "uuid", uuid_latest);
