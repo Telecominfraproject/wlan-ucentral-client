@@ -44,12 +44,14 @@ struct client_config {
 };
 extern struct client_config client;
 
+extern struct lws *websocket;
+
 void config_init(int apply);
 int config_get_uuid_latest(void);
 int config_get_uuid_active(void);
 int config_verify(uint32_t uuid, struct blob_attr *attr);
 
-void proto_send_heartbeat(struct lws *wsi);
-void proto_send_capabilities(struct lws *wsi);
-void proto_send_state(struct lws *wsi);
-void proto_handle(struct lws *wsi, char *cmd);
+void proto_send_heartbeat(void);
+void proto_send_capabilities(void);
+void proto_send_state(void);
+void proto_handle(char *cmd);

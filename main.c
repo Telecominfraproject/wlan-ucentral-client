@@ -29,7 +29,7 @@ static struct lws_context *context;
 static struct uloop_timeout reporting;
 static struct uloop_timeout periodic;
 static struct uloop_fd sock;
-static struct lws *connected;
+struct lws *websocket = NULL;
 
 struct per_vhost_data__minimal {
 	struct lws_context *context;
@@ -171,30 +171,30 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		ULOG_ERR("connection error: %s\n",
 			 in ? (char *)in : "(null)");
+		websocket = NULL;
 		vhd->client_wsi = NULL;
 		lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, get_reconnect_timeout());
-		connected = NULL;
 		break;
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		ULOG_INFO("connection established\n");
 		reconnect_timeout = 1;
-		proto_send_capabilities(wsi);
-		proto_send_heartbeat(wsi);
-		connected = wsi;
+		websocket = wsi;
+		proto_send_capabilities();
+		proto_send_heartbeat();
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
-		proto_handle(wsi, (char *) in);
+		proto_handle((char *) in);
 		break;
 
 	case LWS_CALLBACK_CLIENT_CLOSED:
 		ULOG_INFO("connection closed\n");
+		websocket = NULL;
 		vhd->client_wsi = NULL;
 		lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, get_reconnect_timeout());
-		connected = NULL;
 		break;
 
 	case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
@@ -237,8 +237,8 @@ periodic_cb(struct uloop_timeout *t)
 static void
 reporting_cb(struct uloop_timeout *t)
 {
-	if (connected)
-		proto_send_state(connected);
+	if (websocket)
+		proto_send_state();
 
         uloop_timeout_set(t, client.reporting * 60 * 1000);
 }

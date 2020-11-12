@@ -35,7 +35,7 @@ static const struct blobmsg_policy proto_policy[__PROTO_MAX] = {
 
 
 static void
-proto_send(struct lws *wsi, const char *fmt, ...)
+proto_send( const char *fmt, ...)
 {
 	size_t size = 0;
 	char *p = NULL;
@@ -68,7 +68,7 @@ proto_send(struct lws *wsi, const char *fmt, ...)
 	}
 
 	ULOG_INFO("TX: %s\n", &p[LWS_PRE]);
-	if (lws_write(wsi, (unsigned char *)&p[LWS_PRE], size - LWS_PRE - 1, LWS_WRITE_TEXT) < 0)
+	if (lws_write(websocket, (unsigned char *)&p[LWS_PRE], size - LWS_PRE - 1, LWS_WRITE_TEXT) < 0)
 		ULOG_ERR("failed to send message\n");
 
 out:
@@ -76,22 +76,22 @@ out:
 }
 
 void
-proto_send_heartbeat(struct lws *wsi)
+proto_send_heartbeat(void)
 {
 	int uuid_latest = config_get_uuid_latest();
 	int uuid_active = config_get_uuid_active();
 
 	if (uuid_active == uuid_latest)
-		proto_send(wsi, "{\"serial\": \"%s\", \"uuid\": %d}",
+		proto_send("{\"serial\": \"%s\", \"uuid\": %d}",
 			   client.serial, uuid_latest);
 	else
-		proto_send(wsi, "{\"serial\": \"%s\", \"uuid\": %d, \"active\": %d }",
+		proto_send("{\"serial\": \"%s\", \"uuid\": %d, \"active\": %d }",
 			   client.serial, uuid_latest, uuid_active);
 	ULOG_INFO("xmit heartbeat\n");
 }
 
 void
-proto_send_capabilities(struct lws *wsi)
+proto_send_capabilities(void)
 {
 	char path[PATH_MAX] = { };
 	char *capab;
@@ -109,13 +109,13 @@ proto_send_capabilities(struct lws *wsi)
 		ULOG_ERR("failed to format capabilities\n");
 		return;
 	}
-	proto_send(wsi, "{\"serial\": \"%s\", \"capab\": %s}", client.serial, capab);
+	proto_send("{\"serial\": \"%s\", \"capab\": %s}", client.serial, capab);
 	ULOG_INFO("xmit capabilities\n");
 	free(capab);
 }
 
 void
-proto_send_state(struct lws *wsi)
+proto_send_state(void)
 {
 	char *state;
 	int ret;
@@ -138,13 +138,13 @@ proto_send_state(struct lws *wsi)
 		ULOG_ERR("failed to format state\n");
 		return;
 	}
-	proto_send(wsi, "{\"serial\": \"%s\", \"state\": %s}", client.serial, state);
+	proto_send("{\"serial\": \"%s\", \"state\": %s}", client.serial, state);
 	ULOG_INFO("xmit state\n");
 	free(state);
 }
 
 void
-proto_handle(struct lws *wsi, char *cmd)
+proto_handle(char *cmd)
 {
 	struct blob_attr *tb[__PROTO_MAX] = {};
 
@@ -162,6 +162,6 @@ proto_handle(struct lws *wsi, char *cmd)
 			return;
 		if (config_verify(blobmsg_get_u32(tb[PROTO_UUID]), tb[PROTO_CFG]))
 			ULOG_ERR("failed to verify new config\n");
-		proto_send_heartbeat(wsi);
+		proto_send_heartbeat();
 	}
 }
