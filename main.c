@@ -31,6 +31,7 @@ static struct uloop_timeout periodic;
 static struct uloop_fd sock;
 struct lws *websocket = NULL;
 time_t conn_time;
+struct runqueue runqueue;
 
 struct per_vhost_data__minimal {
 	struct lws_context *context;
@@ -286,7 +287,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	config_init(1);
+	config_init();
 
 	lws_set_log_level(logs, NULL);
 
@@ -305,6 +306,8 @@ int main(int argc, char **argv)
 	}
 
 	uloop_init();
+	runqueue_init(&runqueue);
+	runqueue.max_running_tasks = 1;
 	ubus_init();
 	periodic.cb = periodic_cb;
         uloop_timeout_set(&periodic, 1000);

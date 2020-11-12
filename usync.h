@@ -27,6 +27,7 @@
 #include <libubox/ulog.h>
 #include <libubox/utils.h>
 #include <libubox/blobmsg.h>
+#include <libubox/runqueue.h>
 #include <libubox/blobmsg_json.h>
 
 #define USYNC_CERT	"/etc/usync/cert.pem"
@@ -44,13 +45,20 @@ struct client_config {
 };
 extern struct client_config client;
 
+struct task {
+	int run_time;
+	void (*run)(int uuid);
+	void (*complete)(int ret);
+};
+
+extern struct runqueue runqueue;
 extern struct lws *websocket;
 extern time_t conn_time;
 
 extern uint32_t uuid_latest;
 extern uint32_t uuid_active;
 
-void config_init(int apply);
+void config_init(void);
 int config_verify(struct blob_attr *attr);
 
 void proto_send_heartbeat(void);
@@ -59,3 +67,5 @@ void proto_send_state(void);
 void proto_handle(char *cmd);
 
 void ubus_init(void);
+
+void task_run(const struct task *task, int uuid);

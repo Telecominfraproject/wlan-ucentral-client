@@ -85,16 +85,22 @@ proto_send_capabilities(void)
 	ULOG_INFO("xmit capabilities\n");
 }
 
-void
-proto_send_state(void)
+static void
+state_run_cb(int uuid)
+{
+	ULOG_ERR("running state task\n");
+
+	execlp("/usr/sbin/usync_state.sh", "/usr/sbin/usync_state.sh", NULL);
+	exit(1);
+}
+
+static void
+state_complete_cb(int ret)
 {
 	void *s;
-	int ret;
 
-	ret = system("/usr/sbin/usync_state.sh");
-	ret = WEXITSTATUS(ret);
-	if (ret) {
-		ULOG_ERR("failed to generate state file\n");
+	if(ret) {
+		ULOG_ERR("state task returned %d\n", ret);
 		return;
 	}
 
@@ -107,6 +113,18 @@ proto_send_state(void)
 	}
 	blobmsg_close_table(&proto, s);
 	ULOG_INFO("xmit state\n");
+}
+
+struct task state_task = {
+	.run_time = 10,
+	.run = state_run_cb,
+	.complete = state_complete_cb,
+};
+
+void
+proto_send_state(void)
+{
+	task_run(&state_task, 0);
 }
 
 void
@@ -124,8 +142,9 @@ proto_handle(char *cmd)
 
 	blobmsg_parse(proto_policy, __PROTO_MAX, tb, blob_data(proto.head), blob_len(proto.head));
 	if (tb[PROTO_CFG]) {
-		if (config_verify(tb[PROTO_CFG]))
+		if (config_verify(tb[PROTO_CFG])) {
 			ULOG_ERR("failed to verify new config\n");
-		proto_send_heartbeat();
+			proto_send_heartbeat();
+		}
 	}
 }

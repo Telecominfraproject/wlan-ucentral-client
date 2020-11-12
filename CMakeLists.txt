@@ -5,7 +5,7 @@ ADD_DEFINITIONS(-Os -ggdb -Wextra -Wall -Werror --std=gnu99 -Wmissing-declaratio
 
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 
-SET(SOURCES main.c config.c proto.c ubus.c)
+SET(SOURCES main.c config.c proto.c ubus.c task.c)
 
 FIND_LIBRARY(ubus NAMES ubus)
 FIND_LIBRARY(blobmsg_json NAMES blobmsg_json)

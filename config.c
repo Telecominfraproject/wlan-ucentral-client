@@ -77,7 +77,7 @@ config_apply(void)
 }
 
 void
-config_init(int apply)
+config_init(void)
 {
 	char path[PATH_MAX] = { };
 	char link[PATH_MAX] = { };
@@ -94,8 +94,7 @@ config_init(int apply)
 
 	uuid_latest = config_load(gl.gl_pathv[gl.gl_pathc - 1]);
 
-	if (apply)
-		config_apply();
+	config_apply();
 
 	snprintf(path, PATH_MAX, "%s/usync.active", USYNC_CONFIG);
 	if (readlink(path, link, PATH_MAX) < 0) {
@@ -114,16 +113,44 @@ config_init(int apply)
 out:
 	globfree(&gl);
 	ULOG_INFO("config_init latest:%d active:%d\n", uuid_latest, uuid_active);
+	proto_send_heartbeat();
 }
+
+static void
+verify_run_cb(int uuid)
+{
+	char str[64];
+
+	ULOG_ERR("running verify task\n");
+
+	sprintf(str, "%010d", uuid);
+	execlp("/usr/sbin/usync_verify.sh", "/usr/sbin/usync_verify.sh", USYNC_TMP, str, NULL);
+	exit(1);
+}
+
+static void
+verify_complete_cb(int ret)
+{
+	if (ret) {
+		ULOG_ERR("verify task returned %d\n", ret);
+		return;
+	}
+	config_init();
+}
+
+struct task verify = {
+	.run_time = 10,
+	.run = verify_run_cb,
+	.complete = verify_complete_cb,
+};
 
 int
 config_verify(struct blob_attr *attr)
 {
 	static struct blob_attr *tb[__CONFIG_MAX];
-	int ret = -1;
 	FILE *fp = NULL;
-	char buf[128];
 	char *cfg;
+	int ret = -1;
 
 	blobmsg_parse(config_policy, __CONFIG_MAX, tb, blobmsg_data(attr), blobmsg_data_len(attr));
 	if (!tb[CONFIG_UUID])
@@ -141,10 +168,7 @@ config_verify(struct blob_attr *attr)
 	fclose(fp);
 	fp = NULL;
 
-	snprintf(buf, sizeof(buf), "/usr/sbin/usync_verify.sh %s %010d", USYNC_TMP,
-		 blobmsg_get_u32(tb[CONFIG_UUID]));
-	ret = system(buf);
-	ret = WEXITSTATUS(ret);
+	ret = 0;
 
 err:
 	if (cfg)
@@ -152,9 +176,12 @@ err:
 	if (fp)
 		fclose(fp);
 
-	config_init(!ret);
+	fprintf(stderr, "%s:%s[%d]\n", __FILE__, __func__, __LINE__);
+	if (!ret &&
+	    (!uuid_active || uuid_active != blobmsg_get_u32(tb[CONFIG_UUID])))
+		task_run(&verify, blobmsg_get_u32(tb[CONFIG_UUID]));
 
-	return ret;
+	return 0;
 }
 
 
