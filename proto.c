@@ -35,44 +35,25 @@ static const struct blobmsg_policy proto_policy[__PROTO_MAX] = {
 
 
 static void
-proto_send( const char *fmt, ...)
+proto_send_blob(void)
 {
-	size_t size = 0;
-	char *p = NULL;
-	va_list ap;
-	int n = 0;
+	char *msg = blobmsg_format_json(proto.head, true);
+	int len = strlen(msg) + 1;
 
-	va_start(ap, fmt);
-	n = vsnprintf(p, size, fmt, ap);
-	va_end(ap);
-
-	if (n < 0) {
-		ULOG_ERR("failed to determine message size\n");
+	if (!websocket) {
+		ULOG_ERR("trying to send data while not connected\n");
 		return;
 	}
 
-	size = (size_t) n + 1 + LWS_PRE;
-	p = malloc(size);
-	if (p == NULL) {
-		ULOG_ERR("failed to malloc message\n");
-		return;
-	}
+	msg = realloc(msg, LWS_PRE + len);
+	memmove(&msg[LWS_PRE], msg, len);
+	memset(msg, 0, LWS_PRE);
 
-	va_start(ap, fmt);
-	n = vsnprintf(&p[LWS_PRE], size - LWS_PRE, fmt, ap);
-	va_end(ap);
-
-	if (n < 0) {
-		ULOG_ERR("failed to generate message\n");
-		goto out;
-	}
-
-	ULOG_INFO("TX: %s\n", &p[LWS_PRE]);
-	if (lws_write(websocket, (unsigned char *)&p[LWS_PRE], size - LWS_PRE - 1, LWS_WRITE_TEXT) < 0)
+	ULOG_INFO("TX: %s\n", &msg[LWS_PRE]);
+	if (lws_write(websocket, (unsigned char *)&msg[LWS_PRE], len - 1, LWS_WRITE_TEXT) < 0)
 		ULOG_ERR("failed to send message\n");
 
-out:
-	free(p);
+	free(msg);
 }
 
 void
@@ -81,12 +62,12 @@ proto_send_heartbeat(void)
 	int uuid_latest = config_get_uuid_latest();
 	int uuid_active = config_get_uuid_active();
 
-	if (uuid_active == uuid_latest)
-		proto_send("{\"serial\": \"%s\", \"uuid\": %d}",
-			   client.serial, uuid_latest);
-	else
-		proto_send("{\"serial\": \"%s\", \"uuid\": %d, \"active\": %d }",
-			   client.serial, uuid_latest, uuid_active);
+	blob_buf_init(&proto, 0);
+	blobmsg_add_string(&proto, "serial", client.serial);
+	blobmsg_add_u32(&proto, "uuid", uuid_latest);
+	if (uuid_active != uuid_latest)
+		blobmsg_add_u32(&proto, "active", uuid_active);
+	proto_send_blob();
 	ULOG_INFO("xmit heartbeat\n");
 }
 
@@ -94,30 +75,26 @@ void
 proto_send_capabilities(void)
 {
 	char path[PATH_MAX] = { };
-	char *capab;
+	void *c;
 
 	snprintf(path, PATH_MAX, "%s/capabilities.json", USYNC_CONFIG);
 
 	blob_buf_init(&proto, 0);
+	blobmsg_add_string(&proto, "serial", client.serial);
+	c = blobmsg_open_table(&proto, "capab");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
 		ULOG_ERR("failed to load capabilities\n");
 		return;
 	}
-
-	capab = blobmsg_format_json(proto.head, true);
-	if (!capab) {
-		ULOG_ERR("failed to format capabilities\n");
-		return;
-	}
-	proto_send("{\"serial\": \"%s\", \"capab\": %s}", client.serial, capab);
+	blobmsg_close_table(&proto, c);
+	proto_send_blob();
 	ULOG_INFO("xmit capabilities\n");
-	free(capab);
 }
 
 void
 proto_send_state(void)
 {
-	char *state;
+	void *s;
 	int ret;
 
 	ret = system("/usr/sbin/usync_state.sh");
@@ -128,19 +105,14 @@ proto_send_state(void)
 	}
 
 	blob_buf_init(&proto, 0);
+	blobmsg_add_string(&proto, "serial", client.serial);
+	s = blobmsg_open_table(&proto, "state");
 	if (!blobmsg_add_json_from_file(&proto, USYNC_STATE)) {
 		ULOG_ERR("failed to load state\n");
 		return;
 	}
-
-	state = blobmsg_format_json(proto.head, true);
-	if (!state) {
-		ULOG_ERR("failed to format state\n");
-		return;
-	}
-	proto_send("{\"serial\": \"%s\", \"state\": %s}", client.serial, state);
+	blobmsg_close_table(&proto, s);
 	ULOG_INFO("xmit state\n");
-	free(state);
 }
 
 void
