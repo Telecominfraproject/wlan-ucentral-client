@@ -47,7 +47,6 @@ config_load(const char *path)
 
 	memset(config_tb, 0, sizeof(config_tb));
 	blobmsg_parse(config_policy, __CONFIG_MAX, config_tb, blob_data(cfg.head), blob_len(cfg.head));
-	//ULOG_INFO("%s was loaded\n", path);
 	if (config_tb[CONFIG_UUID])
 		return blobmsg_get_u32(config_tb[CONFIG_UUID]);
 

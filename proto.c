@@ -33,7 +33,6 @@ static const struct blobmsg_policy proto_policy[__PROTO_MAX] = {
 	[PROTO_CFG] = { .name = "cfg", .type = BLOBMSG_TYPE_TABLE },
 };
 
-
 static void
 proto_send_blob(void)
 {
