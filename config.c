@@ -117,7 +117,7 @@ out:
 }
 
 int
-config_verify(uint32_t uuid, struct blob_attr *attr)
+config_verify(struct blob_attr *attr)
 {
 	static struct blob_attr *tb[__CONFIG_MAX];
 	int ret = -1;

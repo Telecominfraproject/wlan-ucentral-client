@@ -23,13 +23,11 @@
 static struct blob_buf proto;
 
 enum {
-	PROTO_UUID,
 	PROTO_CFG,
 	__PROTO_MAX,
 };
 
 static const struct blobmsg_policy proto_policy[__PROTO_MAX] = {
-	[PROTO_UUID] = { .name = "uuid", .type = BLOBMSG_TYPE_INT32 },
 	[PROTO_CFG] = { .name = "cfg", .type = BLOBMSG_TYPE_TABLE },
 };
 
@@ -126,9 +124,7 @@ proto_handle(char *cmd)
 
 	blobmsg_parse(proto_policy, __PROTO_MAX, tb, blob_data(proto.head), blob_len(proto.head));
 	if (tb[PROTO_CFG]) {
-		if (!tb[PROTO_UUID])
-			return;
-		if (config_verify(blobmsg_get_u32(tb[PROTO_UUID]), tb[PROTO_CFG]))
+		if (config_verify(tb[PROTO_CFG]))
 			ULOG_ERR("failed to verify new config\n");
 		proto_send_heartbeat();
 	}

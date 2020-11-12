@@ -50,7 +50,7 @@ extern uint32_t uuid_latest;
 extern uint32_t uuid_active;
 
 void config_init(int apply);
-int config_verify(uint32_t uuid, struct blob_attr *attr);
+int config_verify(struct blob_attr *attr);
 
 void proto_send_heartbeat(void);
 void proto_send_capabilities(void);
