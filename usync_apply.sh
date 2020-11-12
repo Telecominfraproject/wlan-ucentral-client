@@ -30,7 +30,7 @@ cp -r /etc/config-shadow /tmp
 cp /rom/etc/config/dhcp /tmp/config-shadow
 cp /rom/etc/config/dropbear /tmp/config-shadow
 cp /rom/etc/config/firewall /tmp/config-shadow
-cat /tmp/usync.uci | uci -c /tmp/config-shadow batch
+cat /tmp/usync.uci | uci -c /tmp/config-shadow batch 2> /dev/null
 uci -c /tmp/config-shadow commit
 
 cp /tmp/config-shadow/* /etc/config/
