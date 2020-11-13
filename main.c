@@ -50,7 +50,8 @@ struct client_config client = {
 	.user = "test",
 	.pass = "test",
 	.serial = "00:11:22:33:44:55",
-	.reporting = 1,
+	.reporting = 10,
+	.debug = 0,
 };
 
 static int
@@ -63,7 +64,7 @@ get_reconnect_timeout(void)
 	if (ret >= MAX_RECONNECT)
 		ret = MAX_RECONNECT;
 
-	lwsl_user("next reconnect in %ds\n", ret);
+	ULOG_INFO("next reconnect in %ds\n", ret);
 
 	return ret * LWS_US_PER_SEC;
 }
@@ -249,6 +250,8 @@ static int print_usage(const char *daemon)
 			"\t-p <password>\n"
 			"\t-s <server>\n"
 			"\t-P <port>\n"
+			"\t-r <report interval>\n"
+			"\t-d <debug>\n"
 			"\t-v <venue>\n", daemon);
 	return -1;
 }
@@ -259,9 +262,8 @@ int main(int argc, char **argv)
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 	int ch;
 
-	ulog_open(ULOG_STDIO | ULOG_SYSLOG, LOG_DAEMON, "usync");
 
-	while ((ch = getopt(argc, argv, "S:u:p:s:P:v:")) != -1) {
+	while ((ch = getopt(argc, argv, "S:u:p:s:P:v:r:d")) != -1) {
 		switch (ch) {
 		case 'u':
 			client.user = optarg;
@@ -275,6 +277,12 @@ int main(int argc, char **argv)
 		case 'P':
 			client.port = atoi(optarg);
 			break;
+		case 'r':
+			client.reporting = atoi(optarg);
+			break;
+		case 'd':
+			client.debug = 1;
+			break;
 		case 'v':
 			client.path = optarg;
 			break;
@@ -286,6 +294,9 @@ int main(int argc, char **argv)
 			return print_usage(*argv);
 		}
 	}
+
+	ulog_open(ULOG_STDIO | ULOG_SYSLOG, LOG_DAEMON, "usync");
+	ulog_threshold(LOG_INFO);
 
 	runqueue_init(&runqueue);
 	runqueue.max_running_tasks = 1;

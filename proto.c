@@ -46,7 +46,7 @@ proto_send_blob(void)
 	memmove(&msg[LWS_PRE], msg, len);
 	memset(msg, 0, LWS_PRE);
 
-	ULOG_INFO("TX: %s\n", &msg[LWS_PRE]);
+	ULOG_DBG("TX: %s\n", &msg[LWS_PRE]);
 	if (lws_write(websocket, (unsigned char *)&msg[LWS_PRE], len - 1, LWS_WRITE_TEXT) < 0)
 		ULOG_ERR("failed to send message\n");
 
@@ -62,7 +62,7 @@ proto_send_heartbeat(void)
 	if (uuid_active != uuid_latest)
 		blobmsg_add_u32(&proto, "active", uuid_active);
 	proto_send_blob();
-	ULOG_INFO("xmit heartbeat\n");
+	ULOG_DBG("xmit heartbeat\n");
 }
 
 void
@@ -82,7 +82,7 @@ proto_send_capabilities(void)
 	}
 	blobmsg_close_table(&proto, c);
 	proto_send_blob();
-	ULOG_INFO("xmit capabilities\n");
+	ULOG_DBG("xmit capabilities\n");
 }
 
 static void
@@ -113,7 +113,7 @@ state_complete_cb(int ret)
 	}
 	blobmsg_close_table(&proto, s);
 	proto_send_blob();
-	ULOG_INFO("xmit state\n");
+	ULOG_DBG("xmit state\n");
 }
 
 struct task state_task = {
@@ -133,7 +133,7 @@ proto_handle(char *cmd)
 {
 	struct blob_attr *tb[__PROTO_MAX] = {};
 
-	ULOG_INFO("RX: %s\n", cmd);
+	ULOG_DBG("RX: %s\n", cmd);
 
 	blob_buf_init(&proto, 0);
 	if (!blobmsg_add_json_from_string(&proto, cmd)) {

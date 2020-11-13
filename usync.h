@@ -30,6 +30,8 @@
 #include <libubox/runqueue.h>
 #include <libubox/blobmsg_json.h>
 
+#define ULOG_DBG(fmt, ...) ulog(LOG_DEBUG, fmt, ## __VA_ARGS__)
+
 #define USYNC_CERT	"/etc/usync/cert.pem"
 #define USYNC_CONFIG	 "/etc/usync/"
 #define USYNC_STATE	 "/tmp/usync.state"
@@ -42,6 +44,7 @@ struct client_config {
 	const char *path;
 	const char *serial;
 	int reporting;
+	int debug;
 };
 extern struct client_config client;
 
