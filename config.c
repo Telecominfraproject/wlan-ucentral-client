@@ -69,12 +69,14 @@ static void
 apply_complete_cb(int ret)
 {
 	if (ret) {
-		ULOG_ERR("verify task returned %d\n", ret);
-		config_init();
+		ULOG_ERR("apply task returned %d\n", ret);
+		config_init(0);
+		proto_send_heartbeat();
 		return;
 	}
-	uuid_applied = uuid_latest;
+	uuid_active = uuid_applied = uuid_latest;
 	ULOG_INFO("applied cfg:%ld\n", uuid_latest);
+	proto_send_heartbeat();
 }
 
 struct task apply_task = {
@@ -93,7 +95,7 @@ config_apply(void)
 }
 
 void
-config_init(void)
+config_init(int apply)
 {
 	char path[PATH_MAX] = { };
 	char link[PATH_MAX] = { };
@@ -110,7 +112,8 @@ config_init(void)
 
 	uuid_latest = config_load(gl.gl_pathv[gl.gl_pathc - 1]);
 
-	config_apply();
+	if (apply)
+		config_apply();
 
 	snprintf(path, PATH_MAX, "%s/usync.active", USYNC_CONFIG);
 	if (readlink(path, link, PATH_MAX) < 0) {
@@ -129,7 +132,6 @@ config_init(void)
 out:
 	globfree(&gl);
 	ULOG_INFO("config_init latest:%ld active:%ld\n", uuid_latest, uuid_active);
-	proto_send_heartbeat();
 }
 
 static void
@@ -149,9 +151,10 @@ verify_complete_cb(int ret)
 {
 	if (ret) {
 		ULOG_ERR("verify task returned %d\n", ret);
+		proto_send_heartbeat();
 		return;
 	}
-	config_init();
+	config_init(1);
 }
 
 struct task verify_task = {

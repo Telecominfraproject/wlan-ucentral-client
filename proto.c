@@ -112,6 +112,7 @@ state_complete_cb(int ret)
 		return;
 	}
 	blobmsg_close_table(&proto, s);
+	proto_send_blob();
 	ULOG_INFO("xmit state\n");
 }
 

@@ -58,7 +58,7 @@ extern time_t conn_time;
 extern time_t uuid_latest;
 extern time_t uuid_active;
 
-void config_init(void);
+void config_init(int apply);
 int config_verify(struct blob_attr *attr);
 
 void proto_send_heartbeat(void);

@@ -287,7 +287,9 @@ int main(int argc, char **argv)
 		}
 	}
 
-	config_init();
+	runqueue_init(&runqueue);
+	runqueue.max_running_tasks = 1;
+	config_init(1);
 
 	lws_set_log_level(logs, NULL);
 
@@ -306,8 +308,6 @@ int main(int argc, char **argv)
 	}
 
 	uloop_init();
-	runqueue_init(&runqueue);
-	runqueue.max_running_tasks = 1;
 	ubus_init();
 	periodic.cb = periodic_cb;
         uloop_timeout_set(&periodic, 1000);
