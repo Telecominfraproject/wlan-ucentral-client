@@ -187,6 +187,7 @@ config_verify(struct blob_attr *attr)
 	fclose(fp);
 	fp = NULL;
 
+	uuid_latest = (time_t)blobmsg_get_u32(tb[CONFIG_UUID]);
 	ret = 0;
 
 err:
@@ -196,8 +197,8 @@ err:
 		fclose(fp);
 
 	if (!ret &&
-	    (!uuid_active || uuid_active != (time_t)blobmsg_get_u32(tb[CONFIG_UUID])))
-		task_run(&verify_task, blobmsg_get_u32(tb[CONFIG_UUID]));
+	    (!uuid_active || uuid_active != uuid_latest))
+		task_run(&verify_task, uuid_latest);
 
 	return 0;
 }
