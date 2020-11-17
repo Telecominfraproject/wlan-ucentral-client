@@ -61,8 +61,8 @@ proto_send_heartbeat(void)
 	blobmsg_add_u32(&proto, "uuid", uuid_latest);
 	if (uuid_active != uuid_latest)
 		blobmsg_add_u32(&proto, "active", uuid_active);
-	proto_send_blob();
 	ULOG_DBG("xmit heartbeat\n");
+	proto_send_blob();
 }
 
 void
@@ -81,8 +81,8 @@ proto_send_capabilities(void)
 		return;
 	}
 	blobmsg_close_table(&proto, c);
-	proto_send_blob();
 	ULOG_DBG("xmit capabilities\n");
+	proto_send_blob();
 }
 
 void
@@ -95,8 +95,8 @@ proto_send_external(struct blob_attr *a)
 	c = blobmsg_open_table(&proto, "msg");
 	blobmsg_add_blob(&proto, a);
 	blobmsg_close_table(&proto, c);
-	proto_send_blob();
 	ULOG_DBG("xmit message\n");
+	proto_send_blob();
 }
 
 static void

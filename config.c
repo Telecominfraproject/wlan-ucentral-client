@@ -58,7 +58,7 @@ apply_run_cb(time_t uuid)
 {
 	char str[64];
 
-	ULOG_ERR("running verify task\n");
+	ULOG_INFO("running verify task\n");
 
 	sprintf(str, "/etc/usync/usync.cfg.%010ld", uuid);
 	execlp("/usr/sbin/usync_apply.sh", "/usr/sbin/usync_apply.sh", str, NULL);
@@ -139,7 +139,7 @@ verify_run_cb(time_t uuid)
 {
 	char str[64];
 
-	ULOG_ERR("running verify task\n");
+	ULOG_INFO("running verify task\n");
 
 	sprintf(str, "%010ld", uuid);
 	execlp("/usr/sbin/usync_verify.sh", "/usr/sbin/usync_verify.sh", USYNC_TMP, str, NULL);
@@ -154,6 +154,7 @@ verify_complete_cb(int ret)
 		proto_send_heartbeat();
 		return;
 	}
+	ULOG_DBG("verify task succeeded, calling config with apply flag\n");
 	config_init(1);
 }
 
@@ -171,19 +172,27 @@ config_verify(struct blob_attr *attr)
 	char *cfg;
 	int ret = -1;
 
+	ULOG_DBG("starting verification\n");
+
 	blobmsg_parse(config_policy, __CONFIG_MAX, tb, blobmsg_data(attr), blobmsg_data_len(attr));
-	if (!tb[CONFIG_UUID])
+	if (!tb[CONFIG_UUID]) {
+		ULOG_ERR("received config with no uuid\n");
 		return -1;
-
+	}
 	cfg = blobmsg_format_json(attr, true);
-	if (!cfg)
+	if (!cfg) {
+		ULOG_ERR("failed to format config\n");
 		goto err;
-
+	}
 	fp = fopen(USYNC_TMP, "w+");
-	if (!fp)
+	if (!fp) {
+		ULOG_ERR("failed to open %s\n", USYNC_TMP);
 		goto err;
-	if (fwrite(cfg, strlen(cfg), 1, fp) != 1)
+	}
+	if (fwrite(cfg, strlen(cfg), 1, fp) != 1) {
+		ULOG_ERR("failed to write %s\n", USYNC_TMP);
 		goto err;
+	}
 	fclose(fp);
 	fp = NULL;
 
