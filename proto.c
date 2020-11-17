@@ -85,18 +85,33 @@ proto_send_capabilities(void)
 	proto_send_blob();
 }
 
-void
-proto_send_external(struct blob_attr *a)
+static void
+proto_send_notification(struct blob_attr *a, char *n)
 {
+	struct blob_attr *b;
+	int rem;
 	void *c;
 
 	blob_buf_init(&proto, 0);
 	blobmsg_add_string(&proto, "serial", client.serial);
-	c = blobmsg_open_table(&proto, "msg");
-	blobmsg_add_blob(&proto, a);
+	c = blobmsg_open_table(&proto, n);
+	blobmsg_for_each_attr(b, a, rem)
+		blobmsg_add_blob(&proto, b);
 	blobmsg_close_table(&proto, c);
 	ULOG_DBG("xmit message\n");
 	proto_send_blob();
+}
+
+void
+proto_send_external(struct blob_attr *a)
+{
+	proto_send_notification(a, "msg");
+}
+
+void
+proto_send_log(struct blob_attr *a)
+{
+	proto_send_notification(a, "log");
 }
 
 static void

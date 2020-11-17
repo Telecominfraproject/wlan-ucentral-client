@@ -48,9 +48,21 @@ static int ubus_send_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+static int ubus_log_cb(struct ubus_context *ctx,
+		       struct ubus_object *obj,
+		       struct ubus_request_data *req,
+		       const char *method, struct blob_attr *msg)
+{
+	if (msg)
+		proto_send_log(msg);
+
+	return UBUS_STATUS_OK;
+}
+
 static const struct ubus_method usync_methods[] = {
 	UBUS_METHOD_NOARG("state", ubus_state_cb),
 	UBUS_METHOD_NOARG("send", ubus_send_cb),
+	UBUS_METHOD_NOARG("log", ubus_log_cb),
 };
 
 static struct ubus_object_type ubus_object_type =

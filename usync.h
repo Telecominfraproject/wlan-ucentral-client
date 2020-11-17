@@ -68,6 +68,7 @@ void proto_send_heartbeat(void);
 void proto_send_capabilities(void);
 void proto_send_state(void);
 void proto_send_external(struct blob_attr *a);
+void proto_send_log(struct blob_attr *a);
 void proto_handle(char *cmd);
 
 void ubus_init(void);
