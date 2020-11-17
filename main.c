@@ -296,7 +296,8 @@ int main(int argc, char **argv)
 	}
 
 	ulog_open(ULOG_STDIO | ULOG_SYSLOG, LOG_DAEMON, "usync");
-	ulog_threshold(LOG_INFO);
+	if (!client.debug)
+		ulog_threshold(LOG_INFO);
 
 	runqueue_init(&runqueue);
 	runqueue.max_running_tasks = 1;
