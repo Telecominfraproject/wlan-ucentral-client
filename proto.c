@@ -85,6 +85,20 @@ proto_send_capabilities(void)
 	ULOG_DBG("xmit capabilities\n");
 }
 
+void
+proto_send_external(struct blob_attr *a)
+{
+	void *c;
+
+	blob_buf_init(&proto, 0);
+	blobmsg_add_string(&proto, "serial", client.serial);
+	c = blobmsg_open_table(&proto, "msg");
+	blobmsg_add_blob(&proto, a);
+	blobmsg_close_table(&proto, c);
+	proto_send_blob();
+	ULOG_DBG("xmit message\n");
+}
+
 static void
 state_run_cb(time_t uuid)
 {

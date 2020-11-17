@@ -67,6 +67,7 @@ int config_verify(struct blob_attr *attr);
 void proto_send_heartbeat(void);
 void proto_send_capabilities(void);
 void proto_send_state(void);
+void proto_send_external(struct blob_attr *a);
 void proto_handle(char *cmd);
 
 void ubus_init(void);
