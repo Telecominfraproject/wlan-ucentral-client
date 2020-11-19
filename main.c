@@ -219,18 +219,18 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 
 static const struct
 lws_protocols protocols[] = {
-	{ "usync-broker", callback_broker, 0, 0, 0, NULL, 0},
+	{ "usync-broker", callback_broker, 0, 32 * 1024, 0, NULL, 0},
 	{ }
 };
 
 static void
 periodic_cb(struct uloop_timeout *t)
 {
-	struct pollfd pfd = { };
+	struct pollfd pfd = { .events = POLLIN | POLLOUT };
 
 	lws_service_fd(context, &pfd);
 	lws_service_tsi(context, -1, 0);
-        uloop_timeout_set(t, 1000);
+        uloop_timeout_set(t, 100);
 }
 
 static void
@@ -322,7 +322,7 @@ int main(int argc, char **argv)
 	uloop_init();
 	ubus_init();
 	periodic.cb = periodic_cb;
-        uloop_timeout_set(&periodic, 1000);
+        uloop_timeout_set(&periodic, 100);
 	reporting.cb = reporting_cb;
         uloop_timeout_set(&reporting, client.reporting * 60 * 1000);
 	lws_service(context, 0);
