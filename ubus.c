@@ -15,7 +15,7 @@
  *   Copyright (C) 2020 John Crispin <john@phrozen.org> 
  */
 
-#include "usync.h"
+#include "ucentral.h"
 
 #include <libubus.h>
 
@@ -59,20 +59,20 @@ static int ubus_log_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
-static const struct ubus_method usync_methods[] = {
+static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD_NOARG("state", ubus_state_cb),
 	UBUS_METHOD_NOARG("send", ubus_send_cb),
 	UBUS_METHOD_NOARG("log", ubus_log_cb),
 };
 
 static struct ubus_object_type ubus_object_type =
-	UBUS_OBJECT_TYPE("usync", usync_methods);
+	UBUS_OBJECT_TYPE("ucentral", ucentral_methods);
 
 struct ubus_object ubus_object = {
-	.name = "usync",
+	.name = "ucentral",
 	.type = &ubus_object_type,
-	.methods = usync_methods,
-	.n_methods = ARRAY_SIZE(usync_methods),
+	.methods = ucentral_methods,
+	.n_methods = ARRAY_SIZE(ucentral_methods),
 };
 
 static void ubus_connect_handler(struct ubus_context *ctx)

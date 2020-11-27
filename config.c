@@ -15,10 +15,10 @@
  *   Copyright (C) 2020 John Crispin <john@phrozen.org> 
  */
 
-#include "usync.h"
+#include "ucentral.h"
 
-#define USYNC_TMP	"/tmp/usync.tmp"
-#define USYNC_LATEST	"/etc/usync/usync.active"
+#define USYNC_TMP	"/tmp/ucentral.tmp"
+#define USYNC_LATEST	"/etc/ucentral/ucentral.active"
 
 enum {
 	CONFIG_UUID,
@@ -60,8 +60,8 @@ apply_run_cb(time_t uuid)
 
 	ULOG_INFO("running verify task\n");
 
-	sprintf(str, "/etc/usync/usync.cfg.%010ld", uuid);
-	execlp("/usr/sbin/usync_apply.sh", "/usr/sbin/usync_apply.sh", str, NULL);
+	sprintf(str, "/etc/ucentral/ucentral.cfg.%010ld", uuid);
+	execlp("/usr/sbin/ucentral_apply.sh", "/usr/sbin/ucentral_apply.sh", str, NULL);
 	exit(1);
 }
 
@@ -104,7 +104,7 @@ config_init(int apply)
 
 	uuid_active = 0;
 
-	snprintf(path, PATH_MAX, "%s/usync.cfg.*", USYNC_CONFIG);
+	snprintf(path, PATH_MAX, "%s/ucentral.cfg.*", USYNC_CONFIG);
 	if (glob(path, 0, NULL, &gl))
                 return;
 	if (!gl.gl_pathc)
@@ -115,7 +115,7 @@ config_init(int apply)
 	if (apply)
 		config_apply();
 
-	snprintf(path, PATH_MAX, "%s/usync.active", USYNC_CONFIG);
+	snprintf(path, PATH_MAX, "%s/ucentral.active", USYNC_CONFIG);
 	if (readlink(path, link, PATH_MAX) < 0) {
 		ULOG_INFO("no active symlink found\n");
 		goto out;
@@ -142,7 +142,7 @@ verify_run_cb(time_t uuid)
 	ULOG_INFO("running verify task\n");
 
 	sprintf(str, "%010ld", uuid);
-	execlp("/usr/sbin/usync_verify.sh", "/usr/sbin/usync_verify.sh", USYNC_TMP, str, NULL);
+	execlp("/usr/sbin/ucentral_verify.sh", "/usr/sbin/ucentral_verify.sh", USYNC_TMP, str, NULL);
 	exit(1);
 }
 

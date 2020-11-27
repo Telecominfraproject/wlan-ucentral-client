@@ -18,7 +18,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 
-#include "usync.h"
+#include "ucentral.h"
 
 static struct blob_buf proto;
 
@@ -119,7 +119,7 @@ state_run_cb(time_t uuid)
 {
 	ULOG_ERR("running state task\n");
 
-	execlp("/usr/sbin/usync_state.sh", "/usr/sbin/usync_state.sh", NULL);
+	execlp("/usr/sbin/ucentral_state.sh", "/usr/sbin/ucentral_state.sh", NULL);
 	exit(1);
 }
 

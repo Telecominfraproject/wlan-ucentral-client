@@ -21,7 +21,7 @@
 
 #include <libubox/uloop.h>
 
-#include "usync.h"
+#include "ucentral.h"
 
 static int reconnect_timeout;
 static struct lws_context *context;
@@ -86,7 +86,7 @@ sul_connect_attempt(struct lws_sorted_usec_list *sul)
 		LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK |
 		LCCSCF_ALLOW_SELFSIGNED;
 
-	vhd->i.protocol = "usync-broker";
+	vhd->i.protocol = "ucentral-broker";
 	vhd->i.pwsi = &vhd->client_wsi;
 
 	if (!lws_client_connect_via_info(&vhd->i))
@@ -219,7 +219,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 
 static const struct
 lws_protocols protocols[] = {
-	{ "usync-broker", callback_broker, 0, 32 * 1024, 0, NULL, 0},
+	{ "ucentral-broker", callback_broker, 0, 32 * 1024, 0, NULL, 0},
 	{ }
 };
 
@@ -295,7 +295,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	ulog_open(ULOG_STDIO | ULOG_SYSLOG, LOG_DAEMON, "usync");
+	ulog_open(ULOG_STDIO | ULOG_SYSLOG, LOG_DAEMON, "ucentral");
 	if (!client.debug)
 		ulog_threshold(LOG_INFO);
 

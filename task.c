@@ -15,9 +15,9 @@
  *   Copyright (C) 2020 John Crispin <john@phrozen.org> 
  */
 
-#include "usync.h"
+#include "ucentral.h"
 
-struct usync_task {
+struct ucentral_task {
 	time_t uuid;
 	int ret;
 	const struct task *task;
@@ -28,7 +28,7 @@ static void
 runqueue_proc_cb(struct uloop_process *p, int ret)
 {
 	struct runqueue_process *t = container_of(p, struct runqueue_process, proc);
-	struct usync_task *u = container_of(t, struct usync_task, proc);
+	struct ucentral_task *u = container_of(t, struct ucentral_task, proc);
 
 	u->ret = ret;
 
@@ -37,7 +37,7 @@ runqueue_proc_cb(struct uloop_process *p, int ret)
 
 static void task_run_cb(struct runqueue *q, struct runqueue_task *task)
 {
-	struct usync_task *t = container_of(task, struct usync_task, proc.task);
+	struct ucentral_task *t = container_of(task, struct ucentral_task, proc.task);
 	pid_t pid;
 
 	pid = fork();
@@ -63,7 +63,7 @@ static const struct runqueue_task_type task_type = {
 static void
 task_complete(struct runqueue *q, struct runqueue_task *task)
 {
-	struct usync_task *t = container_of(task, struct usync_task, proc.task);
+	struct ucentral_task *t = container_of(task, struct ucentral_task, proc.task);
 	t->task->complete(t->ret);
 	free(t);
 }
@@ -71,7 +71,7 @@ task_complete(struct runqueue *q, struct runqueue_task *task)
 void
 task_run(const struct task *task, time_t uuid)
 {
-	struct usync_task *t = calloc(1, sizeof(*t));
+	struct ucentral_task *t = calloc(1, sizeof(*t));
 
 	t->uuid = uuid;
 	t->task = task;
