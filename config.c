@@ -66,7 +66,7 @@ apply_run_cb(time_t uuid)
 }
 
 static void
-apply_complete_cb(int ret)
+apply_complete_cb(struct task *t, int ret)
 {
 	if (ret) {
 		ULOG_ERR("apply task returned %d\n", ret);
@@ -147,7 +147,7 @@ verify_run_cb(time_t uuid)
 }
 
 static void
-verify_complete_cb(int ret)
+verify_complete_cb(struct task *t, int ret)
 {
 	if (ret) {
 		ULOG_ERR("verify task returned %d\n", ret);

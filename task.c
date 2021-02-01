@@ -20,7 +20,7 @@
 struct ucentral_task {
 	time_t uuid;
 	int ret;
-	const struct task *task;
+	struct task *task;
 	struct runqueue_process proc;
 };
 
@@ -64,12 +64,12 @@ static void
 task_complete(struct runqueue *q, struct runqueue_task *task)
 {
 	struct ucentral_task *t = container_of(task, struct ucentral_task, proc.task);
-	t->task->complete(t->ret);
+	t->task->complete(t->task, t->ret);
 	free(t);
 }
 
 void
-task_run(const struct task *task, time_t uuid)
+task_run(struct task *task, time_t uuid)
 {
 	struct ucentral_task *t = calloc(1, sizeof(*t));
 

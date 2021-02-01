@@ -24,11 +24,13 @@ static struct blob_buf proto;
 
 enum {
 	PROTO_CFG,
+	PROTO_CMD,
 	__PROTO_MAX,
 };
 
 static const struct blobmsg_policy proto_policy[__PROTO_MAX] = {
 	[PROTO_CFG] = { .name = "cfg", .type = BLOBMSG_TYPE_TABLE },
+	[PROTO_CMD] = { .name = "cmd", .type = BLOBMSG_TYPE_TABLE },
 };
 
 static void
@@ -124,7 +126,7 @@ state_run_cb(time_t uuid)
 }
 
 static void
-state_complete_cb(int ret)
+state_complete_cb(struct task *t, int ret)
 {
 	void *s;
 
@@ -175,6 +177,12 @@ proto_handle(char *cmd)
 		if (config_verify(tb[PROTO_CFG])) {
 			ULOG_ERR("failed to verify new config\n");
 			proto_send_heartbeat();
+		}
+	}
+
+	if (tb[PROTO_CMD]) {
+		if (cmd_run(proto.head)) {
+			ULOG_ERR("failed to verify queue command\n");
 		}
 	}
 }

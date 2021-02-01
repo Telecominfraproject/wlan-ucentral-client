@@ -51,7 +51,7 @@ extern struct client_config client;
 struct task {
 	int run_time;
 	void (*run)(time_t uuid);
-	void (*complete)(int ret);
+	void (*complete)(struct task *t, int ret);
 };
 
 extern struct runqueue runqueue;
@@ -64,6 +64,8 @@ extern time_t uuid_active;
 void config_init(int apply);
 int config_verify(struct blob_attr *attr);
 
+int cmd_run(struct blob_attr *tb);
+
 void proto_send_heartbeat(void);
 void proto_send_capabilities(void);
 void proto_send_state(void);
@@ -73,4 +75,4 @@ void proto_handle(char *cmd);
 
 void ubus_init(void);
 
-void task_run(const struct task *task, time_t uuid);
+void task_run(struct task *task, time_t uuid);
