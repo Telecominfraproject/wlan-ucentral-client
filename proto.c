@@ -87,7 +87,7 @@ proto_send_capabilities(void)
 	proto_send_blob();
 }
 
-static void
+void
 proto_send_notification(struct blob_attr *a, char *n)
 {
 	struct blob_attr *b;
@@ -102,61 +102,6 @@ proto_send_notification(struct blob_attr *a, char *n)
 	blobmsg_close_table(&proto, c);
 	ULOG_DBG("xmit message\n");
 	proto_send_blob();
-}
-
-void
-proto_send_external(struct blob_attr *a)
-{
-	proto_send_notification(a, "msg");
-}
-
-void
-proto_send_log(struct blob_attr *a)
-{
-	proto_send_notification(a, "log");
-}
-
-static void
-state_run_cb(time_t uuid)
-{
-	ULOG_ERR("running state task\n");
-
-	execlp("/usr/sbin/ucentral_state.sh", "/usr/sbin/ucentral_state.sh", NULL);
-	exit(1);
-}
-
-static void
-state_complete_cb(struct task *t, int ret)
-{
-	void *s;
-
-	if(ret) {
-		ULOG_ERR("state task returned %d\n", ret);
-		return;
-	}
-
-	blob_buf_init(&proto, 0);
-	blobmsg_add_string(&proto, "serial", client.serial);
-	s = blobmsg_open_table(&proto, "state");
-	if (!blobmsg_add_json_from_file(&proto, USYNC_STATE)) {
-		ULOG_ERR("failed to load state\n");
-		return;
-	}
-	blobmsg_close_table(&proto, s);
-	proto_send_blob();
-	ULOG_DBG("xmit state\n");
-}
-
-struct task state_task = {
-	.run_time = 10,
-	.run = state_run_cb,
-	.complete = state_complete_cb,
-};
-
-void
-proto_send_state(void)
-{
-	task_run(&state_task, 0);
 }
 
 void
@@ -181,8 +126,8 @@ proto_handle(char *cmd)
 	}
 
 	if (tb[PROTO_CMD]) {
-		if (cmd_run(proto.head)) {
-			ULOG_ERR("failed to verify queue command\n");
+		if (cmd_run(tb[PROTO_CMD])) {
+			ULOG_ERR("failed to queue command\n");
 		}
 	}
 }

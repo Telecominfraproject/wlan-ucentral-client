@@ -22,10 +22,10 @@
 static struct ubus_auto_conn conn;
 static struct blob_buf u;
 
-static int ubus_state_cb(struct ubus_context *ctx,
-			 struct ubus_object *obj,
-			 struct ubus_request_data *req,
-			 const char *method, struct blob_attr *msg)
+static int ubus_status_cb(struct ubus_context *ctx,
+			  struct ubus_object *obj,
+			  struct ubus_request_data *req,
+			  const char *method, struct blob_attr *msg)
 {
 	time_t delta = time(NULL) - conn_time;
 
@@ -37,13 +37,24 @@ static int ubus_state_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+static int ubus_state_cb(struct ubus_context *ctx,
+			 struct ubus_object *obj,
+			 struct ubus_request_data *req,
+			 const char *method, struct blob_attr *msg)
+{
+	if (msg)
+		proto_send_notification(msg, "state");
+
+	return UBUS_STATUS_OK;
+}
+
 static int ubus_send_cb(struct ubus_context *ctx,
 			struct ubus_object *obj,
 			struct ubus_request_data *req,
 			const char *method, struct blob_attr *msg)
 {
 	if (msg)
-		proto_send_external(msg);
+		proto_send_notification(msg, "msg");
 
 	return UBUS_STATUS_OK;
 }
@@ -54,12 +65,13 @@ static int ubus_log_cb(struct ubus_context *ctx,
 		       const char *method, struct blob_attr *msg)
 {
 	if (msg)
-		proto_send_log(msg);
+		proto_send_notification(msg, "log");
 
 	return UBUS_STATUS_OK;
 }
 
 static const struct ubus_method ucentral_methods[] = {
+	UBUS_METHOD_NOARG("status", ubus_status_cb),
 	UBUS_METHOD_NOARG("state", ubus_state_cb),
 	UBUS_METHOD_NOARG("send", ubus_send_cb),
 	UBUS_METHOD_NOARG("log", ubus_log_cb),

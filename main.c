@@ -26,7 +26,6 @@
 static int reconnect_timeout;
 static struct lws_context *context;
 
-static struct uloop_timeout reporting;
 static struct uloop_timeout periodic;
 static struct uloop_fd sock;
 struct lws *websocket = NULL;
@@ -50,7 +49,6 @@ struct client_config client = {
 	.user = "test",
 	.pass = "test",
 	.serial = "00:11:22:33:44:55",
-	.reporting = 10,
 	.debug = 0,
 };
 
@@ -233,15 +231,6 @@ periodic_cb(struct uloop_timeout *t)
         uloop_timeout_set(t, 100);
 }
 
-static void
-reporting_cb(struct uloop_timeout *t)
-{
-	if (websocket)
-		proto_send_state();
-
-        uloop_timeout_set(t, client.reporting * 60 * 1000);
-}
-
 static int print_usage(const char *daemon)
 {
 	fprintf(stderr, "Usage: %s [options]\n"
@@ -262,8 +251,7 @@ int main(int argc, char **argv)
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 	int ch;
 
-
-	while ((ch = getopt(argc, argv, "S:u:p:s:P:v:r:d")) != -1) {
+	while ((ch = getopt(argc, argv, "S:u:p:s:P:v:d")) != -1) {
 		switch (ch) {
 		case 'u':
 			client.user = optarg;
@@ -276,9 +264,6 @@ int main(int argc, char **argv)
 			break;
 		case 'P':
 			client.port = atoi(optarg);
-			break;
-		case 'r':
-			client.reporting = atoi(optarg);
 			break;
 		case 'd':
 			client.debug = 1;
@@ -323,8 +308,6 @@ int main(int argc, char **argv)
 	ubus_init();
 	periodic.cb = periodic_cb;
         uloop_timeout_set(&periodic, 100);
-	reporting.cb = reporting_cb;
-        uloop_timeout_set(&reporting, client.reporting * 60 * 1000);
 	lws_service(context, 0);
 	uloop_run();
 	uloop_done();

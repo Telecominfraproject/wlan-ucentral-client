@@ -64,7 +64,7 @@ static void
 task_complete(struct runqueue *q, struct runqueue_task *task)
 {
 	struct ucentral_task *t = container_of(task, struct ucentral_task, proc.task);
-	t->task->complete(t->task, t->ret);
+	t->task->complete(t->task, t->uuid, t->ret);
 	free(t);
 }
 

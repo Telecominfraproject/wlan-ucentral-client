@@ -17,12 +17,23 @@
 
 #include "ucentral.h"
 
+enum {
+	CMD_CMD,
+	CMD_UUID,
+	__CMD_MAX,
+};
+
+static const struct blobmsg_policy cmd_policy[__CMD_MAX] = {
+	[CMD_CMD] = { .name = "cmd", .type = BLOBMSG_TYPE_STRING },
+	[CMD_UUID] = { .name = "uuid", .type = BLOBMSG_TYPE_INT32 },
+};
+
 static void
 cmd_run_cb(time_t uuid)
 {
 	char str[64];
 
-	ULOG_INFO("running verify task\n");
+	ULOG_INFO("running command task\n");
 
 	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
 	execlp("/usr/sbin/ucentral_cmd.sh", "/usr/sbin/ucentral_cmd.sh", str, NULL);
@@ -30,30 +41,40 @@ cmd_run_cb(time_t uuid)
 }
 
 static void
-cmd_complete_cb(struct task *t, int ret)
+cmd_complete_cb(struct task *t, time_t uuid, int ret)
 {
 	ULOG_INFO("executed command: %d\n", ret);
 	free(t);
 }
 
 int
-cmd_run(struct blob_attr *tb)
+cmd_run(struct blob_attr *attr)
 {
-	char *json = blobmsg_format_json(tb, true);
-	time_t t = time(NULL);
+	static struct blob_attr *tb[__CMD_MAX];
+	char *json = NULL;
+	FILE *fp = NULL;
 	char path[256];
-	FILE *fp;
+	int ret = -1;
+	time_t t;
 
+	blobmsg_parse(cmd_policy, __CMD_MAX, tb, blobmsg_data(attr), blobmsg_data_len(attr));
+	if (!tb[CMD_CMD] || !tb[CMD_UUID]) {
+		goto out;
+	}
+
+	t = blobmsg_get_u32(tb[CMD_UUID]);
+
+	json = blobmsg_format_json(attr, true);
 	if (!json) {
 		ULOG_ERR("failed to format cmd json\n");
-		return -1;
+		goto out;
 	}
 
 	snprintf(path, sizeof(path), "/tmp/ucentral.cmd.%010ld", t);
 	fp = fopen(path, "w+");
 	if (!fp) {
 		ULOG_ERR("failed to open %s\n", path);
-		return -1;
+		goto out;
 	}
 	if (fwrite(json, strlen(json), 1, fp) == 1) {
 		struct task *task = calloc(1, sizeof(*task));
@@ -61,15 +82,17 @@ cmd_run(struct blob_attr *tb)
 		task->run_time = 60;
 		task->run = cmd_run_cb;
 		task->complete = cmd_complete_cb;
-
 		fclose(fp);
+		fp = NULL;
 		task_run(task, t);
-
-		return 0;
+		ret = 0;
 	}
 
-	fclose(fp);
-	ULOG_ERR("failed to write %s\n", path);
+out:
+	if (json)
+		free(json);
+	if (fp)
+		fclose(fp);
 
-	return -1;
+	return ret;
 }
