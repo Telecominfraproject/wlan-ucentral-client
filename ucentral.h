@@ -68,7 +68,8 @@ int cmd_run(struct blob_attr *tb);
 
 void proto_send_heartbeat(void);
 void proto_send_capabilities(void);
-void proto_send_notification(struct blob_attr *a, char *n);
+void proto_send_raw(struct blob_attr *a);
+void proto_send_log(char *message);
 void proto_handle(char *cmd);
 
 void ubus_init(void);

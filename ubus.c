@@ -22,6 +22,15 @@
 static struct ubus_auto_conn conn;
 static struct blob_buf u;
 
+enum {
+	LOG_MSG,
+	__LOG_MAX,
+};
+
+static const struct blobmsg_policy log_policy[__LOG_MAX] = {
+	[LOG_MSG] = { .name = "msg", .type = BLOBMSG_TYPE_STRING },
+};
+
 static int ubus_status_cb(struct ubus_context *ctx,
 			  struct ubus_object *obj,
 			  struct ubus_request_data *req,
@@ -37,24 +46,15 @@ static int ubus_status_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
-static int ubus_state_cb(struct ubus_context *ctx,
-			 struct ubus_object *obj,
-			 struct ubus_request_data *req,
-			 const char *method, struct blob_attr *msg)
-{
-	if (msg)
-		proto_send_notification(msg, "state");
-
-	return UBUS_STATUS_OK;
-}
-
 static int ubus_send_cb(struct ubus_context *ctx,
 			struct ubus_object *obj,
 			struct ubus_request_data *req,
 			const char *method, struct blob_attr *msg)
 {
-	if (msg)
-		proto_send_notification(msg, "msg");
+	if (!msg)
+		return UBUS_STATUS_INVALID_ARGUMENT;
+
+	proto_send_raw(msg);
 
 	return UBUS_STATUS_OK;
 }
@@ -64,15 +64,19 @@ static int ubus_log_cb(struct ubus_context *ctx,
 		       struct ubus_request_data *req,
 		       const char *method, struct blob_attr *msg)
 {
-	if (msg)
-		proto_send_notification(msg, "log");
+	struct blob_attr *tb[__LOG_MAX] = {};
+
+	blobmsg_parse(log_policy, __LOG_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
+	if (!tb[LOG_MSG])
+		return UBUS_STATUS_INVALID_ARGUMENT;
+
+	proto_send_log(blobmsg_get_string(tb[LOG_MSG]));
 
 	return UBUS_STATUS_OK;
 }
 
 static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD_NOARG("status", ubus_status_cb),
-	UBUS_METHOD_NOARG("state", ubus_state_cb),
 	UBUS_METHOD_NOARG("send", ubus_send_cb),
 	UBUS_METHOD_NOARG("log", ubus_log_cb),
 };

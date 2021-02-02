@@ -69,6 +69,7 @@ static void
 apply_complete_cb(struct task *t, time_t uuid, int ret)
 {
 	if (ret) {
+		proto_send_log("failed to apply config");
 		ULOG_ERR("apply task returned %d\n", ret);
 		config_init(0);
 		proto_send_heartbeat();
@@ -176,20 +177,24 @@ config_verify(struct blob_attr *attr)
 
 	blobmsg_parse(config_policy, __CONFIG_MAX, tb, blobmsg_data(attr), blobmsg_data_len(attr));
 	if (!tb[CONFIG_UUID]) {
+		proto_send_log("received config with no uuid");
 		ULOG_ERR("received config with no uuid\n");
 		return -1;
 	}
 	cfg = blobmsg_format_json(attr, true);
 	if (!cfg) {
+		proto_send_log("failed to format config");
 		ULOG_ERR("failed to format config\n");
 		goto err;
 	}
 	fp = fopen(USYNC_TMP, "w+");
 	if (!fp) {
+		proto_send_log("failed to store config");
 		ULOG_ERR("failed to open %s\n", USYNC_TMP);
 		goto err;
 	}
 	if (fwrite(cfg, strlen(cfg), 1, fp) != 1) {
+		proto_send_log("failed to store config");
 		ULOG_ERR("failed to write %s\n", USYNC_TMP);
 		goto err;
 	}

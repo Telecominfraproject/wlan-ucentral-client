@@ -79,7 +79,7 @@ proto_send_capabilities(void)
 	blobmsg_add_string(&proto, "serial", client.serial);
 	c = blobmsg_open_table(&proto, "capab");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
-		ULOG_ERR("failed to load capabilities\n");
+		proto_send_log("failed to load capabilities");
 		return;
 	}
 	blobmsg_close_table(&proto, c);
@@ -88,19 +88,26 @@ proto_send_capabilities(void)
 }
 
 void
-proto_send_notification(struct blob_attr *a, char *n)
+proto_send_raw(struct blob_attr *a)
 {
 	struct blob_attr *b;
 	int rem;
-	void *c;
 
 	blob_buf_init(&proto, 0);
 	blobmsg_add_string(&proto, "serial", client.serial);
-	c = blobmsg_open_table(&proto, n);
 	blobmsg_for_each_attr(b, a, rem)
 		blobmsg_add_blob(&proto, b);
-	blobmsg_close_table(&proto, c);
 	ULOG_DBG("xmit message\n");
+	proto_send_blob();
+}
+
+void
+proto_send_log(char *message)
+{
+	blob_buf_init(&proto, 0);
+	blobmsg_add_string(&proto, "serial", client.serial);
+	blobmsg_add_string(&proto, "log", message);
+	ULOG_ERR("%s\n", message);
 	proto_send_blob();
 }
 
@@ -113,7 +120,7 @@ proto_handle(char *cmd)
 
 	blob_buf_init(&proto, 0);
 	if (!blobmsg_add_json_from_string(&proto, cmd)) {
-		ULOG_ERR("failed to parse command %s\n", cmd);
+		proto_send_log("failed to parse command");
 		return;
 	}
 
