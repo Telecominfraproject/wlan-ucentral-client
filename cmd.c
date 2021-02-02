@@ -90,6 +90,8 @@ cmd_run(struct blob_attr *attr)
 			task->run_time = blobmsg_get_u32(tb[CMD_TIMEOUT]);
 		else
 			task->run_time = 60;
+		if (tb[CMD_DELAY])
+			task->delay = blobmsg_get_u32(tb[CMD_DELAY]);
 		task->run = cmd_run_cb;
 		task->complete = cmd_complete_cb;
 		fclose(fp);
