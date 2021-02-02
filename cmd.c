@@ -20,18 +20,22 @@
 enum {
 	CMD_CMD,
 	CMD_UUID,
+	CMD_TIMEOUT,
+	CMD_DELAY,
 	__CMD_MAX,
 };
 
 static const struct blobmsg_policy cmd_policy[__CMD_MAX] = {
 	[CMD_CMD] = { .name = "cmd", .type = BLOBMSG_TYPE_STRING },
 	[CMD_UUID] = { .name = "uuid", .type = BLOBMSG_TYPE_INT32 },
+	[CMD_TIMEOUT] = { .name = "timeout", .type = BLOBMSG_TYPE_INT32 },
+	[CMD_DELAY] = { .name = "delay", .type = BLOBMSG_TYPE_INT32 },
 };
 
 static void
 cmd_run_cb(time_t uuid)
 {
-	char str[64];
+	char str[128];
 
 	ULOG_INFO("running command task\n");
 
@@ -43,6 +47,9 @@ cmd_run_cb(time_t uuid)
 static void
 cmd_complete_cb(struct task *t, time_t uuid, int ret)
 {
+	char str[128];
+	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
+	unlink(str);
 	ULOG_INFO("executed command: %d\n", ret);
 	free(t);
 }
@@ -53,7 +60,7 @@ cmd_run(struct blob_attr *attr)
 	static struct blob_attr *tb[__CMD_MAX];
 	char *json = NULL;
 	FILE *fp = NULL;
-	char path[256];
+	char path[128];
 	int ret = -1;
 	time_t t;
 
@@ -79,7 +86,10 @@ cmd_run(struct blob_attr *attr)
 	if (fwrite(json, strlen(json), 1, fp) == 1) {
 		struct task *task = calloc(1, sizeof(*task));
 
-		task->run_time = 60;
+		if (tb[CMD_TIMEOUT])
+			task->run_time = blobmsg_get_u32(tb[CMD_TIMEOUT]);
+		else
+			task->run_time = 60;
 		task->run = cmd_run_cb;
 		task->complete = cmd_complete_cb;
 		fclose(fp);

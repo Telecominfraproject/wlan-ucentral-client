@@ -22,6 +22,7 @@ struct ucentral_task {
 	int ret;
 	struct task *task;
 	struct runqueue_process proc;
+	struct uloop_timeout delay;
 };
 
 static void
@@ -68,6 +69,13 @@ task_complete(struct runqueue *q, struct runqueue_task *task)
 	free(t);
 }
 
+static void
+task_delay(struct uloop_timeout *delay)
+{
+	struct ucentral_task *t = container_of(delay, struct ucentral_task, delay);
+	runqueue_task_add(&runqueue, &t->proc.task, false);
+}
+
 void
 task_run(struct task *task, time_t uuid)
 {
@@ -79,5 +87,10 @@ task_run(struct task *task, time_t uuid)
 	t->proc.task.run_timeout = task->run_time * 1000;
 	t->proc.task.complete = task_complete;
 
-	runqueue_task_add(&runqueue, &t->proc.task, false);
+	if (task->delay) {
+		t->delay.cb = task_delay;
+	        uloop_timeout_set(&t->delay, task->delay * 1000);
+	} else {
+		runqueue_task_add(&runqueue, &t->proc.task, false);
+	}
 }

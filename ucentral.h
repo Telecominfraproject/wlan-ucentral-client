@@ -49,6 +49,7 @@ extern struct client_config client;
 
 struct task {
 	int run_time;
+	int delay;
 	void (*run)(time_t uuid);
 	void (*complete)(struct task *t, time_t uuid, int ret);
 };
