@@ -36,13 +36,16 @@ static const struct blobmsg_policy proto_policy[__PROTO_MAX] = {
 static void
 proto_send_blob(void)
 {
-	char *msg = blobmsg_format_json(proto.head, true);
-	int len = strlen(msg) + 1;
+	char *msg;
+	int len;
 
 	if (!websocket) {
 		ULOG_ERR("trying to send data while not connected\n");
 		return;
 	}
+
+	msg = blobmsg_format_json(proto.head, true);
+	len = strlen(msg) + 1;
 
 	msg = realloc(msg, LWS_PRE + len);
 	memmove(&msg[LWS_PRE], msg, len);
