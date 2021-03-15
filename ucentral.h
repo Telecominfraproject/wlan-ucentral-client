@@ -51,7 +51,7 @@ struct task {
 	int run_time;
 	int delay;
 	void (*run)(time_t uuid);
-	void (*complete)(struct task *t, time_t uuid, int ret);
+	void (*complete)(struct task *t, time_t uuid, uint32_t id, int ret);
 };
 
 extern struct runqueue runqueue;
@@ -61,17 +61,20 @@ extern time_t conn_time;
 extern time_t uuid_latest;
 extern time_t uuid_active;
 
-void config_init(int apply);
-int config_verify(struct blob_attr *attr);
+void config_init(int apply, uint32_t id);
+int config_verify(struct blob_attr *attr, uint32_t id);
 
-int cmd_run(struct blob_attr *tb);
+int cmd_run(struct blob_attr *tb, uint32_t id);
 
-void proto_send_heartbeat(void);
-void proto_send_capabilities(void);
+void proto_send_connect(void);
+void proto_send_ping(void);
 void proto_send_raw(struct blob_attr *a);
 void proto_send_log(char *message);
 void proto_handle(char *cmd);
 
+void configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id);
+void perform_reply(uint32_t error, char *text, uint32_t retcode, uint32_t id);
+
 void ubus_init(void);
 
-void task_run(struct task *task, time_t uuid);
+void task_run(struct task *task, time_t uuid, uint32_t id);

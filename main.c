@@ -174,8 +174,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		reconnect_timeout = 1;
 		conn_time = time(NULL);
 		websocket = wsi;
-		proto_send_capabilities();
-		proto_send_heartbeat();
+		proto_send_connect();
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
@@ -286,7 +285,7 @@ int main(int argc, char **argv)
 
 	runqueue_init(&runqueue);
 	runqueue.max_running_tasks = 1;
-	config_init(1);
+	config_init(1, 0);
 
 	lws_set_log_level(logs, NULL);
 

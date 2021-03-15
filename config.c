@@ -65,7 +65,7 @@ health_run_cb(time_t uuid)
 }
 
 static void
-health_complete_cb(struct task *t, time_t uuid, int ret)
+health_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
 }
 
@@ -81,27 +81,27 @@ apply_run_cb(time_t uuid)
 {
 	char str[64];
 
-	ULOG_INFO("running verify task\n");
+	ULOG_INFO("running apply task\n");
 
 	sprintf(str, "/etc/ucentral/ucentral.cfg.%010ld", uuid);
-	execlp("/usr/sbin/ucentral_apply.sh", "/usr/sbin/ucentral_apply.sh", str, NULL);
+	execlp("/usr/libexec/ucentral/ucentral_apply.sh", "/usr/libexec/ucentral/ucentral_apply.sh", str, NULL);
 	exit(1);
 }
 
 static void
-apply_complete_cb(struct task *t, time_t uuid, int ret)
+apply_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
 	if (ret) {
 		proto_send_log("failed to apply config");
 		ULOG_ERR("apply task returned %d\n", ret);
-		config_init(0);
-		proto_send_heartbeat();
+		config_init(0, id);
+		configure_reply(1, "failed to apply config", uuid, id);
 		return;
 	}
 	uuid_active = uuid_applied = uuid_latest;
 	ULOG_INFO("applied cfg:%ld\n", uuid_latest);
-	proto_send_heartbeat();
-	task_run(&health_task, uuid_latest);
+	configure_reply(0, "applied config", uuid, id);
+	task_run(&health_task, uuid_latest, id);
 }
 
 struct task apply_task = {
@@ -111,16 +111,16 @@ struct task apply_task = {
 };
 
 static void
-config_apply(void)
+config_apply(uint32_t id)
 {
 	if (uuid_latest && (uuid_latest == uuid_applied))
 		return;
 	ULOG_INFO("applying cfg:%ld\n", uuid_latest);
-	task_run(&apply_task, uuid_latest);
+	task_run(&apply_task, uuid_latest, id);
 }
 
 void
-config_init(int apply)
+config_init(int apply, uint32_t id)
 {
 	char path[PATH_MAX] = { };
 	char link[PATH_MAX] = { };
@@ -138,7 +138,7 @@ config_init(int apply)
 	uuid_latest = config_load(gl.gl_pathv[gl.gl_pathc - 1]);
 
 	if (apply)
-		config_apply();
+		config_apply(id);
 
 	snprintf(path, PATH_MAX, "%s/ucentral.active", USYNC_CONFIG);
 	if (readlink(path, link, PATH_MAX) < 0) {
@@ -167,20 +167,20 @@ verify_run_cb(time_t uuid)
 	ULOG_INFO("running verify task\n");
 
 	sprintf(str, "%010ld", uuid);
-	execlp("/usr/sbin/ucentral_verify.sh", "/usr/sbin/ucentral_verify.sh", USYNC_TMP, str, NULL);
+	execlp("/usr/libexec/ucentral/ucentral_verify.sh", "/usr/libexec/ucentral/ucentral_verify.sh", USYNC_TMP, str, NULL);
 	exit(1);
 }
 
 static void
-verify_complete_cb(struct task *t, time_t uuid, int ret)
+verify_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
 	if (ret) {
 		ULOG_ERR("verify task returned %d\n", ret);
-		proto_send_heartbeat();
+		configure_reply(1, "failed to verify config", uuid, id);
 		return;
 	}
 	ULOG_DBG("verify task succeeded, calling config with apply flag\n");
-	config_init(1);
+	config_init(1, id);
 }
 
 struct task verify_task = {
@@ -190,7 +190,7 @@ struct task verify_task = {
 };
 
 int
-config_verify(struct blob_attr *attr)
+config_verify(struct blob_attr *attr, uint32_t id)
 {
 	static struct blob_attr *tb[__CONFIG_MAX];
 	FILE *fp = NULL;
@@ -236,7 +236,7 @@ err:
 
 	if (!ret &&
 	    (!uuid_active || uuid_active != uuid_latest))
-		task_run(&verify_task, uuid_latest);
+		task_run(&verify_task, uuid_latest, id);
 
 	return 0;
 }

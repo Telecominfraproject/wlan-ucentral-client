@@ -19,7 +19,6 @@
 
 enum {
 	CMD_CMD,
-	CMD_UUID,
 	CMD_TIMEOUT,
 	CMD_DELAY,
 	__CMD_MAX,
@@ -27,7 +26,6 @@ enum {
 
 static const struct blobmsg_policy cmd_policy[__CMD_MAX] = {
 	[CMD_CMD] = { .name = "cmd", .type = BLOBMSG_TYPE_STRING },
-	[CMD_UUID] = { .name = "uuid", .type = BLOBMSG_TYPE_INT32 },
 	[CMD_TIMEOUT] = { .name = "timeout", .type = BLOBMSG_TYPE_INT32 },
 	[CMD_DELAY] = { .name = "delay", .type = BLOBMSG_TYPE_INT32 },
 };
@@ -40,36 +38,35 @@ cmd_run_cb(time_t uuid)
 	ULOG_INFO("running command task\n");
 
 	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
-	execlp("/usr/sbin/ucentral_cmd.sh", "/usr/sbin/ucentral_cmd.sh", str, NULL);
+	execlp("/usr/libexec/ucentral/ucentral_cmd.sh", "/usr/libexec/ucentral/ucentral_cmd.sh", str, NULL);
 	exit(1);
 }
 
 static void
-cmd_complete_cb(struct task *t, time_t uuid, int ret)
+cmd_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
 	char str[128];
 	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
 	unlink(str);
-	ULOG_INFO("executed command: %d\n", ret);
 	free(t);
+	perform_reply(ret ? 1 : 0, "command returned an error code", ret, id);
 }
 
 int
-cmd_run(struct blob_attr *attr)
+cmd_run(struct blob_attr *attr, uint32_t id)
 {
 	static struct blob_attr *tb[__CMD_MAX];
 	char *json = NULL;
 	FILE *fp = NULL;
 	char path[128];
 	int ret = -1;
-	time_t t;
+	time_t t = id;
 
 	blobmsg_parse(cmd_policy, __CMD_MAX, tb, blobmsg_data(attr), blobmsg_data_len(attr));
-	if (!tb[CMD_CMD] || !tb[CMD_UUID]) {
+	if (!tb[CMD_CMD]) {
+		ULOG_ERR("cmd has invalid parameters\n");
 		goto out;
 	}
-
-	t = blobmsg_get_u32(tb[CMD_UUID]);
 
 	json = blobmsg_format_json(attr, true);
 	if (!json) {
@@ -96,7 +93,7 @@ cmd_run(struct blob_attr *attr)
 		task->complete = cmd_complete_cb;
 		fclose(fp);
 		fp = NULL;
-		task_run(task, t);
+		task_run(task, t, id);
 		ret = 0;
 	}
 
