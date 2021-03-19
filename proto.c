@@ -26,6 +26,7 @@ static struct blob_buf result;
 enum {
 	JSONRPC_VER,
 	JSONRPC_METHOD,
+	JSONRPC_ERROR,
 	JSONRPC_PARAMS,
 	JSONRPC_ID,
 	__JSONRPC_MAX,
@@ -34,6 +35,7 @@ enum {
 static const struct blobmsg_policy jsonrpc_policy[__JSONRPC_MAX] = {
 	[JSONRPC_VER] = { .name = "jsonrpc", .type = BLOBMSG_TYPE_STRING },
 	[JSONRPC_METHOD] = { .name = "method", .type = BLOBMSG_TYPE_STRING },
+	[JSONRPC_ERROR] = { .name = "error", .type = BLOBMSG_TYPE_STRING },
 	[JSONRPC_PARAMS] = { .name = "params", .type = BLOBMSG_TYPE_TABLE },
 	[JSONRPC_ID] = { .name = "id", .type = BLOBMSG_TYPE_INT32 },
 };
@@ -241,14 +243,13 @@ configure_handle(struct blob_attr **rpc)
 	uint32_t id = 0;
 
 	blobmsg_parse(params_policy, __PARAMS_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
-		      blobmsg_len(rpc[JSONRPC_PARAMS]));
+		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
 
 	if (rpc[JSONRPC_ID])
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
 
 	if (!tb[PARAMS_UUID] || !tb[PARAMS_SERIAL] || !tb[PARAMS_CONFIG]) {
-		ULOG_ERR("configure message is missing parameters %p %p %p\n",
-			 tb[PARAMS_UUID], tb[PARAMS_SERIAL], tb[PARAMS_CONFIG]);
+		ULOG_ERR("configure message is missing parameters\n");
 		configure_reply(1, "invalid parameters", 0, id);
 		return;
 	}
@@ -319,16 +320,18 @@ proto_handle(char *cmd)
 	}
 
 	blobmsg_parse(jsonrpc_policy, __JSONRPC_MAX, rpc, blob_data(proto.head), blob_len(proto.head));
-	if (!rpc[JSONRPC_VER] || !rpc[JSONRPC_METHOD] || !rpc[JSONRPC_PARAMS] ||
-	    strcmp(blobmsg_get_string(rpc[JSONRPC_VER]), "2.0")) {
+	if (!rpc[JSONRPC_VER] || (!rpc[JSONRPC_METHOD] && !rpc[JSONRPC_ERROR]) ||
+	    !rpc[JSONRPC_PARAMS] || strcmp(blobmsg_get_string(rpc[JSONRPC_VER]), "2.0")) {
 		proto_send_log("received invalid jsonrpc call");
 		return;
 	}
 
-	method = blobmsg_get_string(rpc[JSONRPC_METHOD]);
+	if (rpc[JSONRPC_METHOD]) {
+		method = blobmsg_get_string(rpc[JSONRPC_METHOD]);
 
-	if (!strcmp(method, "configure"))
-		configure_handle(rpc);
-	else if (!strcmp(method, "perform"))
-		perform_handle(rpc);
+		if (!strcmp(method, "configure"))
+			configure_handle(rpc);
+		else if (!strcmp(method, "perform"))
+			perform_handle(rpc);
+	}
 }
