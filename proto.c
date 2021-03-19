@@ -149,9 +149,10 @@ proto_send_ping(void)
 	void *m = proto_new_method("ping");
 
 	blobmsg_add_string(&proto, "serial", client.serial);
-	if (uuid_active != uuid_latest)
+	if (uuid_active != uuid_latest) {
 		blobmsg_add_u64(&proto, "active", uuid_active);
-	else
+		blobmsg_add_u64(&proto, "uuid", uuid_latest);
+	} else
 		blobmsg_add_u64(&proto, "uuid", uuid_latest);
 	blobmsg_close_table(&proto, m);
 	ULOG_DBG("xmit ping\n");
