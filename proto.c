@@ -203,6 +203,7 @@ proto_send_log(char *message)
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_string(&proto, "log", message);
+	blobmsg_add_u32(&proto, "severity", LOG_INFO);
 	blobmsg_close_table(&proto, m);
 	ULOG_ERR("%s\n", message);
 	proto_send_blob();
