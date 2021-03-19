@@ -130,6 +130,7 @@ proto_send_connect(void)
 	snprintf(path, PATH_MAX, "%s/capabilities.json", USYNC_CONFIG);
 
 	blobmsg_add_string(&proto, "serial", client.serial);
+	blobmsg_add_string(&proto, "firmware", client.firmware);
 	blobmsg_add_u64(&proto, "uuid", uuid_active);
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {

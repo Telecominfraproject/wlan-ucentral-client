@@ -43,6 +43,7 @@ struct client_config {
 	const char *pass;
 	const char *path;
 	const char *serial;
+	const char *firmware;
 	int debug;
 };
 extern struct client_config client;

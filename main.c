@@ -49,6 +49,7 @@ struct client_config client = {
 	.user = "test",
 	.pass = "test",
 	.serial = "00:11:22:33:44:55",
+	.firmware = "v1.0",
 	.debug = 0,
 };
 
@@ -250,7 +251,7 @@ int main(int argc, char **argv)
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "S:u:p:s:P:v:d")) != -1) {
+	while ((ch = getopt(argc, argv, "S:u:p:s:P:v:f:d")) != -1) {
 		switch (ch) {
 		case 'u':
 			client.user = optarg;
@@ -260,6 +261,9 @@ int main(int argc, char **argv)
 			break;
 		case 's':
 			client.server = optarg;
+			break;
+		case 'f':
+			client.firmware = optarg;
 			break;
 		case 'P':
 			client.port = atoi(optarg);
