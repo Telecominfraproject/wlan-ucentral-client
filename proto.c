@@ -39,10 +39,10 @@ static const struct blobmsg_policy jsonrpc_policy[__JSONRPC_MAX] = {
 };
 
 enum {
-	PARAMS_CONFIG,
 	PARAMS_SERIAL,
 	PARAMS_UUID,
 	PARAMS_COMMAND,
+	PARAMS_CONFIG,
 	__PARAMS_MAX,
 };
 
@@ -240,13 +240,15 @@ configure_handle(struct blob_attr **rpc)
 	struct blob_attr *tb[__PARAMS_MAX] = {};
 	uint32_t id = 0;
 
-	blobmsg_parse(params_policy, __JSONRPC_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
-		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+	blobmsg_parse(params_policy, __PARAMS_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
+		      blobmsg_len(rpc[JSONRPC_PARAMS]));
 
 	if (rpc[JSONRPC_ID])
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
 
 	if (!tb[PARAMS_UUID] || !tb[PARAMS_SERIAL] || !tb[PARAMS_CONFIG]) {
+		ULOG_ERR("configure message is missing parameters %p %p %p\n",
+			 tb[PARAMS_UUID], tb[PARAMS_SERIAL], tb[PARAMS_CONFIG]);
 		configure_reply(1, "invalid parameters", 0, id);
 		return;
 	}
