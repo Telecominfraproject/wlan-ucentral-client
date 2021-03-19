@@ -223,6 +223,26 @@ proto_send_log(char *message)
 }
 
 void
+proto_send_health(uint32_t sanity, struct blob_attr *a)
+{
+	void *m = proto_new_method("healthcheck");
+	struct blob_attr *b;
+	void *c;
+	int rem;
+
+	blobmsg_add_string(&proto, "serial", client.serial);
+	blobmsg_add_u64(&proto, "uuid", uuid_active);
+	blobmsg_add_u32(&proto, "sanity", sanity);
+	c = blobmsg_open_table(&proto, "data");
+	blobmsg_for_each_attr(b, a, rem)
+		blobmsg_add_blob(&proto, b);
+	blobmsg_close_table(&proto, c);
+	blobmsg_close_table(&proto, m);
+	ULOG_DBG("xmit message\n");
+	proto_send_blob();
+}
+
+void
 configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)
 {
 	void *c, *s;

@@ -31,6 +31,17 @@ static const struct blobmsg_policy log_policy[__LOG_MAX] = {
 	[LOG_MSG] = { .name = "msg", .type = BLOBMSG_TYPE_STRING },
 };
 
+enum {
+	HEALTH_SANITY,
+	HEALTH_DATA,
+	__HEALTH_MAX,
+};
+
+static const struct blobmsg_policy health_policy[__HEALTH_MAX] = {
+	[HEALTH_SANITY] = { .name = "sanity", .type = BLOBMSG_TYPE_INT32 },
+	[HEALTH_DATA] = { .name = "data", .type = BLOBMSG_TYPE_TABLE },
+};
+
 static int ubus_status_cb(struct ubus_context *ctx,
 			  struct ubus_object *obj,
 			  struct ubus_request_data *req,
@@ -75,8 +86,25 @@ static int ubus_log_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+static int ubus_health_cb(struct ubus_context *ctx,
+			  struct ubus_object *obj,
+			  struct ubus_request_data *req,
+			  const char *method, struct blob_attr *msg)
+{
+	struct blob_attr *tb[__HEALTH_MAX] = {};
+
+	blobmsg_parse(health_policy, __HEALTH_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
+	if (!tb[HEALTH_SANITY] || !tb[HEALTH_DATA])
+		return UBUS_STATUS_INVALID_ARGUMENT;
+
+	proto_send_health(blobmsg_get_u32(tb[HEALTH_SANITY]), tb[HEALTH_DATA]);
+
+	return UBUS_STATUS_OK;
+}
+
 static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD_NOARG("status", ubus_status_cb),
+	UBUS_METHOD_NOARG("health", ubus_health_cb),
 	UBUS_METHOD_NOARG("send", ubus_send_cb),
 	UBUS_METHOD_NOARG("log", ubus_log_cb),
 };

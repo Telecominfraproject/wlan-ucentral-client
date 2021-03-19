@@ -70,8 +70,8 @@ health_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 }
 
 struct task health_task = {
-	.run_time = 10,
-	.delay = 75,
+	.run_time = 30,
+	.delay = 120,
 	.run = health_run_cb,
 	.complete = health_complete_cb,
 };
