@@ -35,7 +35,7 @@ enum {
 static const struct blobmsg_policy jsonrpc_policy[__JSONRPC_MAX] = {
 	[JSONRPC_VER] = { .name = "jsonrpc", .type = BLOBMSG_TYPE_STRING },
 	[JSONRPC_METHOD] = { .name = "method", .type = BLOBMSG_TYPE_STRING },
-	[JSONRPC_ERROR] = { .name = "error", .type = BLOBMSG_TYPE_STRING },
+	[JSONRPC_ERROR] = { .name = "error", .type = BLOBMSG_TYPE_TABLE },
 	[JSONRPC_PARAMS] = { .name = "params", .type = BLOBMSG_TYPE_TABLE },
 	[JSONRPC_ID] = { .name = "id", .type = BLOBMSG_TYPE_INT32 },
 };
@@ -64,6 +64,17 @@ enum {
 static const struct blobmsg_policy raw_policy[__RAW_MAX] = {
 	[RAW_METHOD] = { .name = "method", .type = BLOBMSG_TYPE_STRING },
 	[RAW_PARAMS] = { .name = "params", .type = BLOBMSG_TYPE_TABLE },
+};
+
+enum {
+	ERROR_CODE,
+	ERROR_MESSAGE,
+	__ERROR_MAX,
+};
+
+static const struct blobmsg_policy error_policy[__ERROR_MAX] = {
+	[ERROR_CODE] = { .name = "code", .type = BLOBMSG_TYPE_INT32 },
+	[ERROR_MESSAGE] = { .name = "message", .type = BLOBMSG_TYPE_STRING },
 };
 
 static void
@@ -288,7 +299,7 @@ perform_handle(struct blob_attr **rpc)
 	struct blob_attr *tb[__PARAMS_MAX] = {};
 	uint32_t id = 0;
 
-	blobmsg_parse(params_policy, __JSONRPC_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
+	blobmsg_parse(params_policy, __PARAMS_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
 		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
 
 	if (rpc[JSONRPC_ID])
@@ -303,6 +314,24 @@ perform_handle(struct blob_attr **rpc)
 		perform_reply(1, "failed to queue command", 1, id);
 		return;
 	}
+}
+
+static void
+error_handle(struct blob_attr **rpc)
+{
+	struct blob_attr *tb[__ERROR_MAX] = {};
+	uint32_t id = 0;
+
+	blobmsg_parse(error_policy, __ERROR_MAX, tb, blobmsg_data(rpc[JSONRPC_ERROR]),
+		      blobmsg_data_len(rpc[JSONRPC_ERROR]));
+
+	if (!tb[ERROR_CODE] || !tb[ERROR_MESSAGE]) {
+		printf("%p %p\n", tb[ERROR_CODE], tb[ERROR_MESSAGE]);
+		perform_reply(1, "invalid parameters", 1, id);
+		return;
+	}
+
+	ULOG_ERR("error %d - %s\n", blobmsg_get_u32(tb[ERROR_CODE]), blobmsg_get_string(tb[ERROR_MESSAGE]));
 }
 
 void
@@ -321,7 +350,8 @@ proto_handle(char *cmd)
 
 	blobmsg_parse(jsonrpc_policy, __JSONRPC_MAX, rpc, blob_data(proto.head), blob_len(proto.head));
 	if (!rpc[JSONRPC_VER] || (!rpc[JSONRPC_METHOD] && !rpc[JSONRPC_ERROR]) ||
-	    !rpc[JSONRPC_PARAMS] || strcmp(blobmsg_get_string(rpc[JSONRPC_VER]), "2.0")) {
+	    (rpc[JSONRPC_METHOD] && !rpc[JSONRPC_PARAMS]) ||
+	    strcmp(blobmsg_get_string(rpc[JSONRPC_VER]), "2.0")) {
 		proto_send_log("received invalid jsonrpc call");
 		return;
 	}
@@ -334,4 +364,8 @@ proto_handle(char *cmd)
 		else if (!strcmp(method, "perform"))
 			perform_handle(rpc);
 	}
+
+	if (rpc[JSONRPC_ERROR])
+		error_handle(rpc);
+
 }
