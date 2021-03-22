@@ -73,6 +73,7 @@ void proto_send_raw(struct blob_attr *a);
 void proto_send_log(char *message);
 void proto_send_health(uint32_t sanity, struct blob_attr *a);
 void proto_handle(char *cmd);
+void proto_handle_simulate(struct blob_attr *a);
 
 void configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id);
 void perform_reply(uint32_t error, char *text, uint32_t retcode, uint32_t id);

@@ -18,14 +18,14 @@
 #include "ucentral.h"
 
 enum {
-	CMD_CMD,
+	CMD_COMMAND,
 	CMD_TIMEOUT,
 	CMD_DELAY,
 	__CMD_MAX,
 };
 
 static const struct blobmsg_policy cmd_policy[__CMD_MAX] = {
-	[CMD_CMD] = { .name = "cmd", .type = BLOBMSG_TYPE_STRING },
+	[CMD_COMMAND] = { .name = "command", .type = BLOBMSG_TYPE_STRING },
 	[CMD_TIMEOUT] = { .name = "timeout", .type = BLOBMSG_TYPE_INT32 },
 	[CMD_DELAY] = { .name = "delay", .type = BLOBMSG_TYPE_INT32 },
 };
@@ -34,11 +34,13 @@ static void
 cmd_run_cb(time_t uuid)
 {
 	char str[128];
+	char id[32];
 
 	ULOG_INFO("running command task\n");
 
 	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
-	execlp("/usr/libexec/ucentral/ucentral_cmd.sh", "/usr/libexec/ucentral/ucentral_cmd.sh", str, NULL);
+	snprintf(id, sizeof(id), "%010ld", uuid);
+	execlp("/usr/libexec/ucentral/ucentral_cmd.sh", "/usr/libexec/ucentral/ucentral_cmd.sh", str, id, NULL);
 	exit(1);
 }
 
@@ -49,7 +51,8 @@ cmd_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
 	unlink(str);
 	free(t);
-	perform_reply(ret ? 1 : 0, "command returned an error code", ret, id);
+	if (ret)
+		perform_reply(1, "command returned an error code", ret, id);
 }
 
 int
@@ -63,7 +66,7 @@ cmd_run(struct blob_attr *attr, uint32_t id)
 	time_t t = id;
 
 	blobmsg_parse(cmd_policy, __CMD_MAX, tb, blobmsg_data(attr), blobmsg_data_len(attr));
-	if (!tb[CMD_CMD]) {
+	if (!tb[CMD_COMMAND]) {
 		ULOG_ERR("cmd has invalid parameters\n");
 		goto out;
 	}

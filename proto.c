@@ -45,6 +45,7 @@ enum {
 	PARAMS_UUID,
 	PARAMS_COMMAND,
 	PARAMS_CONFIG,
+	PARAMS_PAYLOAD,
 	__PARAMS_MAX,
 };
 
@@ -52,7 +53,8 @@ static const struct blobmsg_policy params_policy[__PARAMS_MAX] = {
 	[PARAMS_SERIAL] = { .name = "serial", .type = BLOBMSG_TYPE_STRING },
 	[PARAMS_UUID] = { .name = "uuid", .type = BLOBMSG_TYPE_INT32 },
 	[PARAMS_CONFIG] = { .name = "config", .type = BLOBMSG_TYPE_TABLE },
-	[PARAMS_COMMAND] = { .name = "command", .type = BLOBMSG_TYPE_TABLE },
+	[PARAMS_COMMAND] = { .name = "command", .type = BLOBMSG_TYPE_STRING },
+	[PARAMS_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
 };
 
 enum {
@@ -297,10 +299,6 @@ perform_reply(uint32_t error, char *text, uint32_t retcode, uint32_t id)
 	void *c, *s;
 
 	ULOG_ERR("%s (%d/%d)\n", text, error, retcode);
-	if (!id) {
-		proto_send_log(text);
-		return;
-	}
 
 	c = proto_new_result(id);
 	blobmsg_add_string(&result, "serial", client.serial);
@@ -325,12 +323,12 @@ perform_handle(struct blob_attr **rpc)
 	if (rpc[JSONRPC_ID])
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
 
-	if (!tb[PARAMS_SERIAL] || !tb[PARAMS_COMMAND]) {
+	if (!tb[PARAMS_SERIAL] || !tb[PARAMS_COMMAND] || !tb[PARAMS_PAYLOAD]) {
 		perform_reply(1, "invalid parameters", 1, id);
 		return;
 	}
 
-	if (cmd_run(tb[PARAMS_COMMAND], id)) {
+	if (cmd_run(rpc[JSONRPC_PARAMS], id)) {
 		perform_reply(1, "failed to queue command", 1, id);
 		return;
 	}
@@ -354,19 +352,11 @@ error_handle(struct blob_attr **rpc)
 	ULOG_ERR("error %d - %s\n", blobmsg_get_u32(tb[ERROR_CODE]), blobmsg_get_string(tb[ERROR_MESSAGE]));
 }
 
-void
-proto_handle(char *cmd)
+static void
+proto_handle_blob(void)
 {
 	struct blob_attr *rpc[__JSONRPC_MAX] = {};
 	char *method;
-
-	ULOG_DBG("RX: %s\n", cmd);
-
-	blob_buf_init(&proto, 0);
-	if (!blobmsg_add_json_from_string(&proto, cmd)) {
-		proto_send_log("failed to parse command");
-		return;
-	}
 
 	blobmsg_parse(jsonrpc_policy, __JSONRPC_MAX, rpc, blob_data(proto.head), blob_len(proto.head));
 	if (!rpc[JSONRPC_VER] || (!rpc[JSONRPC_METHOD] && !rpc[JSONRPC_ERROR]) ||
@@ -387,5 +377,35 @@ proto_handle(char *cmd)
 
 	if (rpc[JSONRPC_ERROR])
 		error_handle(rpc);
+
+}
+
+void
+proto_handle(char *cmd)
+{
+	ULOG_DBG("RX: %s\n", cmd);
+
+	blob_buf_init(&proto, 0);
+	if (!blobmsg_add_json_from_string(&proto, cmd)) {
+		proto_send_log("failed to parse command");
+		return;
+	}
+	proto_handle_blob();
+}
+
+void
+proto_handle_simulate(struct blob_attr *a)
+{
+	struct blob_attr *b;
+	char *msg;
+	int rem;
+
+	blob_buf_init(&proto, 0);
+	blobmsg_for_each_attr(b, a, rem)
+		blobmsg_add_blob(&proto, b);
+	msg = blobmsg_format_json(proto.head, true);
+	ULOG_DBG("RX: %s\n", msg);
+	free(msg);
+	proto_handle_blob();
 
 }
