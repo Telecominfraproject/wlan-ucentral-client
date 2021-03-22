@@ -52,7 +52,7 @@ cmd_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 	unlink(str);
 	free(t);
 	if (ret)
-		perform_reply(1, "command returned an error code", ret, id);
+		result_send_error(1, "command returned an error code", ret, id);
 }
 
 int

@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <glob.h>
 #include <libgen.h>
+#include <zlib.h>
 
 #include <libwebsockets.h>
 
@@ -53,6 +54,7 @@ struct task {
 	int delay;
 	void (*run)(time_t uuid);
 	void (*complete)(struct task *t, time_t uuid, uint32_t id, int ret);
+	int pending;
 };
 
 extern struct runqueue runqueue;
@@ -67,16 +69,19 @@ int config_verify(struct blob_attr *attr, uint32_t id);
 
 int cmd_run(struct blob_attr *tb, uint32_t id);
 
-void proto_send_connect(void);
-void proto_send_ping(void);
-void proto_send_raw(struct blob_attr *a);
-void proto_send_log(char *message);
-void proto_send_health(uint32_t sanity, struct blob_attr *a);
+void connect_send(void);
+void ping_send(void);
+void raw_send(struct blob_attr *a);
+void log_send(char *message);
+void health_send(uint32_t sanity, struct blob_attr *a);
+void result_send(uint32_t id, struct blob_attr *a);
+void result_send_error(uint32_t error, char *text, uint32_t retcode, uint32_t id);
+void stats_send(struct blob_attr *a);
+
 void proto_handle(char *cmd);
 void proto_handle_simulate(struct blob_attr *a);
 
 void configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id);
-void perform_reply(uint32_t error, char *text, uint32_t retcode, uint32_t id);
 
 void ubus_init(void);
 

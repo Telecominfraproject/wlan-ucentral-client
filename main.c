@@ -175,7 +175,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		reconnect_timeout = 1;
 		conn_time = time(NULL);
 		websocket = wsi;
-		proto_send_connect();
+		connect_send();
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:

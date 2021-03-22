@@ -22,6 +22,7 @@
 
 static struct blob_buf proto;
 static struct blob_buf result;
+static struct blob_buf action;
 
 enum {
 	JSONRPC_VER,
@@ -57,30 +58,8 @@ static const struct blobmsg_policy params_policy[__PARAMS_MAX] = {
 	[PARAMS_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
 };
 
-enum {
-	RAW_METHOD,
-	RAW_PARAMS,
-	__RAW_MAX,
-};
-
-static const struct blobmsg_policy raw_policy[__RAW_MAX] = {
-	[RAW_METHOD] = { .name = "method", .type = BLOBMSG_TYPE_STRING },
-	[RAW_PARAMS] = { .name = "params", .type = BLOBMSG_TYPE_TABLE },
-};
-
-enum {
-	ERROR_CODE,
-	ERROR_MESSAGE,
-	__ERROR_MAX,
-};
-
-static const struct blobmsg_policy error_policy[__ERROR_MAX] = {
-	[ERROR_CODE] = { .name = "code", .type = BLOBMSG_TYPE_INT32 },
-	[ERROR_MESSAGE] = { .name = "message", .type = BLOBMSG_TYPE_STRING },
-};
-
 static void
-_proto_send_blob(struct blob_buf *blob)
+send_blob(struct blob_buf *blob)
 {
 	char *msg;
 	int len;
@@ -107,17 +86,11 @@ _proto_send_blob(struct blob_buf *blob)
 static void
 proto_send_blob()
 {
-	_proto_send_blob(&proto);
-}
-
-static void
-result_send_blob()
-{
-	_proto_send_blob(&result);
+	send_blob(&proto);
 }
 
 static void*
-proto_new_method(char *method)
+proto_new_blob(char *method)
 {
 	blob_buf_init(&proto, 0);
 	blobmsg_add_string(&proto, "jsonrpc", "2.0");
@@ -125,20 +98,31 @@ proto_new_method(char *method)
 	return blobmsg_open_table(&proto, "params");
 }
 
-static void*
-proto_new_result(uint32_t id)
+static void
+result_send_blob()
 {
+	send_blob(&result);
+}
+
+static void*
+result_new_blob(uint32_t id, time_t uuid)
+{
+	void *m;
+
 	blob_buf_init(&result, 0);
 	blobmsg_add_string(&result, "jsonrpc", "2.0");
-	if (id)
-		blobmsg_add_u32(&result, "id", id);
-	return blobmsg_open_table(&result, "result");
+	m = blobmsg_open_table(&result, "result");
+	blobmsg_add_string(&result, "serial", client.serial);
+	blobmsg_add_u64(&result, "uuid", uuid);
+	blobmsg_add_u32(&result, "id", id);
+
+	return m;
 }
 
 void
-proto_send_connect(void)
+connect_send(void)
 {
-	void *m = proto_new_method("connect");
+	void *m = proto_new_blob("connect");
 	char path[PATH_MAX] = { };
 	void *c;
 
@@ -149,7 +133,7 @@ proto_send_connect(void)
 	blobmsg_add_u64(&proto, "uuid", uuid_active);
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
-		proto_send_log("failed to load capabilities");
+		log_send("failed to load capabilities");
 		return;
 	}
 	blobmsg_close_table(&proto, c);
@@ -159,9 +143,9 @@ proto_send_connect(void)
 }
 
 void
-proto_send_ping(void)
+ping_send(void)
 {
-	void *m = proto_new_method("ping");
+	void *m = proto_new_blob("ping");
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	if (uuid_active != uuid_latest) {
@@ -174,10 +158,10 @@ proto_send_ping(void)
 	proto_send_blob();
 }
 
-static void
-proto_send_pending(void)
+/*static void
+pending_send(void)
 {
-	void *m = proto_new_method("cfgpending");
+	void *m = proto_new_blob("cfgpending");
 
 	if (uuid_latest && uuid_active == uuid_latest)
 		return;
@@ -188,11 +172,22 @@ proto_send_pending(void)
 	blobmsg_close_table(&proto, m);
 	ULOG_DBG("xmit pending\n");
 	proto_send_blob();
-}
+}*/
 
 void
-proto_send_raw(struct blob_attr *a)
+raw_send(struct blob_attr *a)
 {
+	enum {
+		RAW_METHOD,
+		RAW_PARAMS,
+		__RAW_MAX,
+	};
+
+	static const struct blobmsg_policy raw_policy[__RAW_MAX] = {
+		[RAW_METHOD] = { .name = "method", .type = BLOBMSG_TYPE_STRING },
+		[RAW_PARAMS] = { .name = "params", .type = BLOBMSG_TYPE_TABLE },
+	};
+
 	struct blob_attr *tb[__PARAMS_MAX] = {};
 	struct blob_attr *b;
 	void *m;
@@ -201,20 +196,89 @@ proto_send_raw(struct blob_attr *a)
 	blobmsg_parse(raw_policy, __RAW_MAX, tb, blob_data(a), blob_len(a));
 	if (!tb[RAW_METHOD] || !tb[RAW_PARAMS])
 		return;
-	m = proto_new_method(blobmsg_get_string(tb[RAW_METHOD]));
+	m = proto_new_blob(blobmsg_get_string(tb[RAW_METHOD]));
 	blobmsg_add_string(&proto, "serial", client.serial);
-	blobmsg_add_u64(&proto, "uuid", time(NULL));
+	blobmsg_add_u64(&proto, "uuid", uuid_active);
 	blobmsg_for_each_attr(b, tb[RAW_PARAMS], rem)
 		blobmsg_add_blob(&proto, b);
 	blobmsg_close_table(&proto, m);
-	ULOG_DBG("xmit message\n");
 	proto_send_blob();
 }
 
 void
-proto_send_log(char *message)
+result_send(uint32_t id, struct blob_attr *a)
 {
-	void *m = proto_new_method("log");
+	struct blob_attr *b;
+	void *m, *s;
+	int rem;
+
+	m = result_new_blob(id, uuid_active);
+	s = blobmsg_open_table(&result, "status");
+	blobmsg_for_each_attr(b, a, rem)
+		blobmsg_add_blob(&result, b);
+	blobmsg_close_table(&result, s);
+	blobmsg_close_table(&result, m);
+	result_send_blob();
+}
+
+void
+stats_send(struct blob_attr *a)
+{
+	struct blob_attr *b;
+	void *c;
+	int rem;
+
+	blob_buf_init(&proto, 0);
+	blobmsg_add_string(&proto, "jsonrpc", "2.0");
+	blobmsg_add_string(&proto, "method", "state");
+	c = blobmsg_open_table(&proto, "params");
+	if (blobmsg_data_len(a) >= 2 * 1024) {
+		char *source = blobmsg_format_json(a, true);
+		uLongf sourceLen = strlen(source) + 1;
+		uLongf destLen = compressBound(sourceLen);
+		unsigned char *dest = malloc(destLen);
+		char *b64 = NULL;
+		int ret = 0;
+
+		if (!dest)
+			ret = 1;
+
+		if (!ret && compress(dest, &destLen, (unsigned char *)source, sourceLen) != Z_OK)
+			ret = 1;
+
+		if (!ret)
+			b64 = malloc(destLen * 2);
+		if (!b64)
+			ret = 1;
+		if (!ret) {
+			int len = b64_encode(dest, destLen, b64, destLen * 2);
+			if (len > 0)
+				blobmsg_add_string(&proto, "compress_64", b64);
+			else
+				ret = 1;
+		}
+		if (source)
+			free(source);
+		if (dest)
+			free(dest);
+		if (b64)
+			free(b64);
+		if (ret) {
+			ULOG_ERR("failed to compress stats");
+			return;
+		}
+	} else {
+		blobmsg_for_each_attr(b, a, rem)
+			blobmsg_add_blob(&proto, b);
+	}
+	blobmsg_close_table(&proto, c);
+	proto_send_blob();
+}
+
+void
+log_send(char *message)
+{
+	void *m = proto_new_blob("log");
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_string(&proto, "log", message);
@@ -225,9 +289,9 @@ proto_send_log(char *message)
 }
 
 void
-proto_send_health(uint32_t sanity, struct blob_attr *a)
+health_send(uint32_t sanity, struct blob_attr *a)
 {
-	void *m = proto_new_method("healthcheck");
+	void *m = proto_new_blob("healthcheck");
 	struct blob_attr *b;
 	void *c;
 	int rem;
@@ -245,22 +309,37 @@ proto_send_health(uint32_t sanity, struct blob_attr *a)
 }
 
 void
+result_send_error(uint32_t error, char *text, uint32_t retcode, uint32_t id)
+{
+	void *c, *s;
+
+	ULOG_ERR("%s/(%d)\n", text, retcode);
+
+	c = result_new_blob(id, uuid_active);
+	s = blobmsg_open_table(&result, "status");
+	blobmsg_add_u32(&result, "error", error);
+	blobmsg_add_string(&result, "text", text);
+	blobmsg_add_u32(&result, "resultCode", retcode);
+	blobmsg_close_table(&result, s);
+	blobmsg_close_table(&result, c);
+	result_send_blob();
+}
+
+
+void
 configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)
 {
 	void *c, *s;
 
-	if (!id ) {
-		if (!error)
-			proto_send_ping();
-		else
-			proto_send_pending();
-		return;
-	}
+/*	if (!id)
+		return;*/
 
-	c = proto_new_result(id);
-	blobmsg_add_string(&result, "serial", client.serial);
-	if (uuid)
-		blobmsg_add_u64(&result, "uuid", uuid);
+/*	if (error) {
+		pending_send();
+		return;
+	}*/
+
+	c = result_new_blob(id, uuid);
 	s = blobmsg_open_table(&result, "status");
 	blobmsg_add_u32(&result, "error", error);
 	blobmsg_add_string(&result, "text", text);
@@ -293,24 +372,6 @@ configure_handle(struct blob_attr **rpc)
 	}
 }
 
-void
-perform_reply(uint32_t error, char *text, uint32_t retcode, uint32_t id)
-{
-	void *c, *s;
-
-	ULOG_ERR("%s (%d/%d)\n", text, error, retcode);
-
-	c = proto_new_result(id);
-	blobmsg_add_string(&result, "serial", client.serial);
-	s = blobmsg_open_table(&result, "status");
-	blobmsg_add_u32(&result, "error", error);
-	blobmsg_add_string(&result, "text", text);
-	blobmsg_add_u32(&result, "resultCode", retcode);
-	blobmsg_close_table(&result, s);
-	blobmsg_close_table(&result, c);
-	result_send_blob();
-}
-
 static void
 perform_handle(struct blob_attr **rpc)
 {
@@ -324,19 +385,68 @@ perform_handle(struct blob_attr **rpc)
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
 
 	if (!tb[PARAMS_SERIAL] || !tb[PARAMS_COMMAND] || !tb[PARAMS_PAYLOAD]) {
-		perform_reply(1, "invalid parameters", 1, id);
+		result_send_error(1, "invalid parameters", 1, id);
 		return;
 	}
 
 	if (cmd_run(rpc[JSONRPC_PARAMS], id)) {
-		perform_reply(1, "failed to queue command", 1, id);
+		result_send_error(1, "failed to queue command", 1, id);
 		return;
 	}
 }
 
 static void
+action_handle(struct blob_attr **rpc, char *command)
+{
+	struct blob_attr *tb[__PARAMS_MAX] = {};
+	uint32_t id = 0;
+
+	blobmsg_parse(params_policy, __PARAMS_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
+		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+
+	if (rpc[JSONRPC_ID])
+		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
+	if (!tb[PARAMS_SERIAL]) {
+		result_send_error(1, "invalid parameters", 1, id);
+		return;
+	}
+
+	blob_buf_init(&action, 0);
+	blobmsg_add_string(&action, "command", command);
+	blobmsg_add_u32(&action, "delay", 10);
+	blobmsg_add_u32(&action, "timeout", 60 * 10);
+	if (rpc[JSONRPC_PARAMS]) {
+		void *c = blobmsg_open_table(&action, "payload");
+		struct blob_attr *b;
+		int rem;
+
+		blobmsg_for_each_attr(b, rpc[JSONRPC_PARAMS], rem)
+			blobmsg_add_blob(&action, b);
+		blobmsg_close_table(&action, c);
+	}
+
+	if (cmd_run(action.head, id)) {
+		result_send_error(1, "failed to queue command", 1, id);
+		return;
+	}
+	result_send_error(0, "triggered command action", 0, id);
+}
+
+static void
 error_handle(struct blob_attr **rpc)
 {
+	enum {
+		ERROR_CODE,
+		ERROR_MESSAGE,
+		__ERROR_MAX,
+	};
+
+	static const struct blobmsg_policy error_policy[__ERROR_MAX] = {
+		[ERROR_CODE] = { .name = "code", .type = BLOBMSG_TYPE_INT32 },
+		[ERROR_MESSAGE] = { .name = "message", .type = BLOBMSG_TYPE_STRING },
+	};
+
 	struct blob_attr *tb[__ERROR_MAX] = {};
 	uint32_t id = 0;
 
@@ -345,7 +455,7 @@ error_handle(struct blob_attr **rpc)
 
 	if (!tb[ERROR_CODE] || !tb[ERROR_MESSAGE]) {
 		printf("%p %p\n", tb[ERROR_CODE], tb[ERROR_MESSAGE]);
-		perform_reply(1, "invalid parameters", 1, id);
+		result_send_error(1, "invalid parameters", 1, id);
 		return;
 	}
 
@@ -362,7 +472,7 @@ proto_handle_blob(void)
 	if (!rpc[JSONRPC_VER] || (!rpc[JSONRPC_METHOD] && !rpc[JSONRPC_ERROR]) ||
 	    (rpc[JSONRPC_METHOD] && !rpc[JSONRPC_PARAMS]) ||
 	    strcmp(blobmsg_get_string(rpc[JSONRPC_VER]), "2.0")) {
-		proto_send_log("received invalid jsonrpc call");
+		log_send("received invalid jsonrpc call");
 		return;
 	}
 
@@ -373,6 +483,10 @@ proto_handle_blob(void)
 			configure_handle(rpc);
 		else if (!strcmp(method, "perform"))
 			perform_handle(rpc);
+		else if (!strcmp(method, "reboot") ||
+			 !strcmp(method, "factory") ||
+			 !strcmp(method, "upgrade"))
+			action_handle(rpc, method);
 	}
 
 	if (rpc[JSONRPC_ERROR])
@@ -387,7 +501,7 @@ proto_handle(char *cmd)
 
 	blob_buf_init(&proto, 0);
 	if (!blobmsg_add_json_from_string(&proto, cmd)) {
-		proto_send_log("failed to parse command");
+		log_send("failed to parse command");
 		return;
 	}
 	proto_handle_blob();

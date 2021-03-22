@@ -91,7 +91,7 @@ task_run(struct task *task, time_t uuid, uint32_t id)
 
 	if (task->delay) {
 		t->delay.cb = task_delay;
-	        uloop_timeout_set(&t->delay, task->delay * 1000);
+		uloop_timeout_set(&t->delay, task->delay * 1000);
 	} else {
 		runqueue_task_add(&runqueue, &t->proc.task, false);
 	}

@@ -70,7 +70,7 @@ health_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 }
 
 struct task health_task = {
-	.run_time = 30,
+	.run_time = 120,
 	.delay = 120,
 	.run = health_run_cb,
 	.complete = health_complete_cb,
@@ -92,7 +92,7 @@ static void
 apply_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
 	if (ret) {
-		proto_send_log("failed to apply config");
+		log_send("failed to apply config");
 		ULOG_ERR("apply task returned %d\n", ret);
 		config_init(0, id);
 		configure_reply(1, "failed to apply config", uuid, id);
@@ -100,12 +100,12 @@ apply_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 	}
 	uuid_active = uuid_applied = uuid_latest;
 	ULOG_INFO("applied cfg:%ld\n", uuid_latest);
-	configure_reply(0, "applied config", uuid, id);
-	task_run(&health_task, uuid_latest, id);
+	configure_reply(0, "applied config", uuid_active, id);
+	task_run(&health_task, uuid_active, id);
 }
 
 struct task apply_task = {
-	.run_time = 10,
+	.run_time = 60,
 	.run = apply_run_cb,
 	.complete = apply_complete_cb,
 };
@@ -201,24 +201,24 @@ config_verify(struct blob_attr *attr, uint32_t id)
 
 	blobmsg_parse(config_policy, __CONFIG_MAX, tb, blobmsg_data(attr), blobmsg_data_len(attr));
 	if (!tb[CONFIG_UUID]) {
-		proto_send_log("received config with no uuid");
+		log_send("received config with no uuid");
 		ULOG_ERR("received config with no uuid\n");
 		return -1;
 	}
 	cfg = blobmsg_format_json(attr, true);
 	if (!cfg) {
-		proto_send_log("failed to format config");
+		log_send("failed to format config");
 		ULOG_ERR("failed to format config\n");
 		goto err;
 	}
 	fp = fopen(USYNC_TMP, "w+");
 	if (!fp) {
-		proto_send_log("failed to store config");
+		log_send("failed to store config");
 		ULOG_ERR("failed to open %s\n", USYNC_TMP);
 		goto err;
 	}
 	if (fwrite(cfg, strlen(cfg), 1, fp) != 1) {
-		proto_send_log("failed to store config");
+		log_send("failed to store config");
 		ULOG_ERR("failed to write %s\n", USYNC_TMP);
 		goto err;
 	}

@@ -17,7 +17,7 @@ INCLUDE_DIRECTORIES(${ubox_include_dir} ${ubus_include_dir} ${libwebsockets_incl
 
 ADD_EXECUTABLE(ucentral ${SOURCES})
 
-TARGET_LINK_LIBRARIES(ucentral ${ubox} ${ubus} ${websockets} ${blobmsg_json})
+TARGET_LINK_LIBRARIES(ucentral ${ubox} ${ubus} ${websockets} ${blobmsg_json} z)
 
 INSTALL(TARGETS ucentral
 	RUNTIME DESTINATION sbin
