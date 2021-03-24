@@ -182,3 +182,8 @@ void ubus_init(void)
 	conn.cb = ubus_connect_handler;
 	ubus_auto_connect(&conn);
 }
+
+void ubus_deinit(void)
+{
+	ubus_auto_shutdown(&conn);
+}

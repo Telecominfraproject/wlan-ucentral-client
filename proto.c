@@ -523,3 +523,11 @@ proto_handle_simulate(struct blob_attr *a)
 	proto_handle_blob();
 
 }
+
+void
+proto_free(void)
+{
+	blob_buf_free(&proto);
+	blob_buf_free(&result);
+	blob_buf_free(&action);
+}

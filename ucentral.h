@@ -80,9 +80,13 @@ void stats_send(struct blob_attr *a);
 
 void proto_handle(char *cmd);
 void proto_handle_simulate(struct blob_attr *a);
+void proto_free(void);
 
 void configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id);
 
+void config_deinit(void);
+
 void ubus_init(void);
+void ubus_deinit(void);
 
 void task_run(struct task *task, time_t uuid, uint32_t id);

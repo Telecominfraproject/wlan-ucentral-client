@@ -241,4 +241,8 @@ err:
 	return 0;
 }
 
-
+void
+config_deinit(void)
+{
+	blob_buf_free(&cfg);
+}
