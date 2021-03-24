@@ -40,8 +40,6 @@
 struct client_config {
 	const char *server;
 	int port;
-	const char *user;
-	const char *pass;
 	const char *path;
 	const char *serial;
 	const char *firmware;

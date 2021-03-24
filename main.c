@@ -46,8 +46,6 @@ struct client_config client = {
 	.server = "localhost",
 	.port = 11783,
 	.path = "/",
-	.user = "test",
-	.pass = "test",
 	.serial = "00:11:22:33:44:55",
 	.firmware = "v1.0",
 	.debug = 0,
@@ -194,20 +192,6 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 				 sul_connect_attempt, get_reconnect_timeout());
 		break;
 
-	case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
-	{
-		unsigned char **p = (unsigned char **)in, *end = (*p) + len;
-		char b[128];
-
-		if (lws_http_basic_auth_gen(client.user, client.pass, b, sizeof(b)))
-			break;
-		if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_AUTHORIZATION,
-				(unsigned char *)b, (int)strlen(b), p, end))
-			return -1;
-
-		break;
-	}
-
 	default:
 		break;
 	}
@@ -251,14 +235,8 @@ int main(int argc, char **argv)
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "S:u:p:s:P:v:f:d")) != -1) {
+	while ((ch = getopt(argc, argv, "S:s:P:v:f:d")) != -1) {
 		switch (ch) {
-		case 'u':
-			client.user = optarg;
-			break;
-		case 'p':
-			client.pass = optarg;
-			break;
 		case 's':
 			client.server = optarg;
 			break;
