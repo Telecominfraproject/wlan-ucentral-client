@@ -245,4 +245,5 @@ void
 config_deinit(void)
 {
 	blob_buf_free(&cfg);
+	task_stop(&health_task);
 }

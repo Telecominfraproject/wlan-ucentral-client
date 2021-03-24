@@ -47,12 +47,14 @@ struct client_config {
 };
 extern struct client_config client;
 
+struct ucentral_task;
 struct task {
 	int run_time;
 	int delay;
 	void (*run)(time_t uuid);
 	void (*complete)(struct task *t, time_t uuid, uint32_t id, int ret);
 	int pending;
+	struct ucentral_task *t;
 };
 
 extern struct runqueue runqueue;
@@ -88,3 +90,4 @@ void ubus_init(void);
 void ubus_deinit(void);
 
 void task_run(struct task *task, time_t uuid, uint32_t id);
+void task_stop(struct task *task);

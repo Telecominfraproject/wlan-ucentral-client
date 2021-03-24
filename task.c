@@ -68,6 +68,7 @@ task_complete(struct runqueue *q, struct runqueue_task *task)
 {
 	struct ucentral_task *t = container_of(task, struct ucentral_task, proc.task);
 	t->task->complete(t->task, t->uuid, t->id, t->ret);
+	t->task->t = NULL;
 	free(t);
 }
 
@@ -89,11 +90,25 @@ task_run(struct task *task, time_t uuid, uint32_t id)
 	t->proc.task.type = &task_type;
 	t->proc.task.run_timeout = task->run_time * 1000;
 	t->proc.task.complete = task_complete;
+	task->t = t;
 
 	if (task->delay) {
 		t->delay.cb = task_delay;
 		uloop_timeout_set(&t->delay, task->delay * 1000);
 	} else {
 		runqueue_task_add(&runqueue, &t->proc.task, false);
+	}
+}
+
+void
+task_stop(struct task *task)
+{
+	if (!task->t)
+		return;
+	uloop_timeout_cancel(&task->t->delay);
+	runqueue_task_kill(&task->t->proc.task);
+	if (task->t) {
+		free(task->t);
+		task->t = NULL;
 	}
 }
