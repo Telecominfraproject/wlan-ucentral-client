@@ -331,8 +331,8 @@ configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)
 {
 	void *c, *s;
 
-/*	if (!id)
-		return;*/
+	if (!id)
+		return;
 
 /*	if (error) {
 		pending_send();
