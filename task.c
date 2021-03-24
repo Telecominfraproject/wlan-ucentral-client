@@ -64,19 +64,24 @@ static const struct runqueue_task_type task_type = {
 };
 
 static void
+task_delay(struct uloop_timeout *delay)
+{
+	struct ucentral_task *t = container_of(delay, struct ucentral_task, delay);
+	runqueue_task_add(&runqueue, &t->proc.task, false);
+}
+
+static void
 task_complete(struct runqueue *q, struct runqueue_task *task)
 {
 	struct ucentral_task *t = container_of(task, struct ucentral_task, proc.task);
 	t->task->complete(t->task, t->uuid, t->id, t->ret);
 	t->task->t = NULL;
-	free(t);
-}
-
-static void
-task_delay(struct uloop_timeout *delay)
-{
-	struct ucentral_task *t = container_of(delay, struct ucentral_task, delay);
-	runqueue_task_add(&runqueue, &t->proc.task, false);
+	if (t->task->periodic) {
+		t->delay.cb = task_delay;
+		uloop_timeout_set(&t->delay, t->task->periodic * 1000);
+	} else {
+		free(t);
+	}
 }
 
 void

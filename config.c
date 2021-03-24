@@ -72,6 +72,7 @@ health_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 struct task health_task = {
 	.run_time = 120,
 	.delay = 120,
+	.periodic = 600,
 	.run = health_run_cb,
 	.complete = health_complete_cb,
 };
@@ -101,6 +102,7 @@ apply_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 	uuid_active = uuid_applied = uuid_latest;
 	ULOG_INFO("applied cfg:%ld\n", uuid_latest);
 	configure_reply(0, "applied config", uuid_active, id);
+	task_stop(&health_task);
 	task_run(&health_task, uuid_active, id);
 }
 

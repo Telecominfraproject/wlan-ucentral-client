@@ -51,6 +51,7 @@ struct ucentral_task;
 struct task {
 	int run_time;
 	int delay;
+	int periodic;
 	void (*run)(time_t uuid);
 	void (*complete)(struct task *t, time_t uuid, uint32_t id, int ret);
 	int pending;
