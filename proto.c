@@ -344,6 +344,7 @@ configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)
 	blobmsg_add_u32(&result, "error", error);
 	blobmsg_add_string(&result, "text", text);
 	blobmsg_close_table(&result, s);
+	blobmsg_add_u32(&result, "id", id);
 	blobmsg_close_table(&result, c);
 	result_send_blob();
 }
