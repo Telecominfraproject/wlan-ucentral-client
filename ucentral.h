@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <stdlib.h>
 #include <unistd.h>
 #include <glob.h>
 #include <libgen.h>
@@ -85,8 +86,11 @@ void health_run(uint32_t id);
 void health_deinit(void);
 
 void apply_run(uint32_t id);
+extern int apply_pending;
 
 void verify_run(uint32_t id);
+
+void failsafe_init(void);
 
 void task_run(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);

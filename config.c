@@ -14,7 +14,7 @@ static const struct blobmsg_policy config_policy[__CONFIG_MAX] = {
 static struct blob_attr *config_tb[__CONFIG_MAX];
 static struct blob_buf cfg;
 
-time_t uuid_applied;
+time_t uuid_applied = 0;
 time_t uuid_latest = 0;
 time_t uuid_active = 0;
 
@@ -55,8 +55,11 @@ config_init(int apply, uint32_t id)
 	uuid_active = 0;
 
 	snprintf(path, PATH_MAX, "%s/ucentral.cfg.*", USYNC_CONFIG);
-	if (glob(path, 0, NULL, &gl))
-                return;
+	if (glob(path, 0, NULL, &gl)) {
+		failsafe_init();
+		return;
+	}
+
 	if (!gl.gl_pathc)
 		goto out;
 

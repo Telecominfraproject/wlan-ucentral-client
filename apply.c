@@ -2,6 +2,8 @@
 
 #include "ucentral.h"
 
+int apply_pending = 0;
+
 static void
 apply_run_cb(time_t uuid)
 {
@@ -17,6 +19,8 @@ apply_run_cb(time_t uuid)
 static void
 apply_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
+	apply_pending = 0;
+
 	if (ret) {
 		log_send("failed to apply config");
 		ULOG_ERR("apply task returned %d\n", ret);
@@ -39,5 +43,6 @@ struct task apply_task = {
 void
 apply_run(uint32_t id)
 {
+	apply_pending = 1;
 	task_run(&apply_task, uuid_latest, id);
 }
