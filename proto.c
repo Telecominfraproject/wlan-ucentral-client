@@ -111,10 +111,10 @@ result_new_blob(uint32_t id, time_t uuid)
 
 	blob_buf_init(&result, 0);
 	blobmsg_add_string(&result, "jsonrpc", "2.0");
+	blobmsg_add_u32(&result, "id", id);
 	m = blobmsg_open_table(&result, "result");
 	blobmsg_add_string(&result, "serial", client.serial);
 	blobmsg_add_u64(&result, "uuid", uuid);
-	blobmsg_add_u32(&result, "id", id);
 
 	return m;
 }
@@ -344,7 +344,6 @@ configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)
 	blobmsg_add_u32(&result, "error", error);
 	blobmsg_add_string(&result, "text", text);
 	blobmsg_close_table(&result, s);
-	blobmsg_add_u32(&result, "id", id);
 	blobmsg_close_table(&result, c);
 	result_send_blob();
 }
