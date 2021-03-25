@@ -275,13 +275,16 @@ int main(int argc, char **argv)
 	periodic.cb = periodic_cb;
         uloop_timeout_set(&periodic, 100);
 	lws_service(context, 0);
+
 	uloop_run();
+
 	uloop_done();
 	proto_free();
 	runqueue_kill(&runqueue);
 	lws_context_destroy(context);
 	ubus_deinit();
 	config_deinit();
+	health_deinit();
 
 	return 0;
 }

@@ -77,5 +77,8 @@ void ubus_deinit(void);
 
 void blink_run(uint32_t duration);
 
+void health_run(uint32_t id);
+void health_deinit(void);
+
 void task_run(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);
