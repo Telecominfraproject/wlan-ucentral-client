@@ -204,12 +204,10 @@ static int print_usage(const char *daemon)
 {
 	fprintf(stderr, "Usage: %s [options]\n"
 			"\t-S <serial>\n"
-			"\t-u <username>\n"
-			"\t-p <password>\n"
 			"\t-s <server>\n"
 			"\t-P <port>\n"
-			"\t-r <report interval>\n"
 			"\t-d <debug>\n"
+			"\t-f <firmware>\n"
 			"\t-v <venue>\n", daemon);
 	return -1;
 }
