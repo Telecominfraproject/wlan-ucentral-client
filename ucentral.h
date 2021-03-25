@@ -49,6 +49,7 @@ extern time_t conn_time;
 
 extern time_t uuid_latest;
 extern time_t uuid_active;
+extern time_t uuid_applied;
 
 void config_init(int apply, uint32_t id);
 int config_verify(struct blob_attr *attr, uint32_t id);
@@ -79,6 +80,8 @@ void blink_run(uint32_t duration);
 
 void health_run(uint32_t id);
 void health_deinit(void);
+
+void apply_run(uint32_t id);
 
 void task_run(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);

@@ -17,7 +17,7 @@ static const struct blobmsg_policy config_policy[__CONFIG_MAX] = {
 static struct blob_attr *config_tb[__CONFIG_MAX];
 static struct blob_buf cfg;
 
-static time_t uuid_applied;
+time_t uuid_applied;
 time_t uuid_latest = 0;
 time_t uuid_active = 0;
 
@@ -39,46 +39,12 @@ config_load(const char *path)
 }
 
 static void
-apply_run_cb(time_t uuid)
-{
-	char str[64];
-
-	ULOG_INFO("running apply task\n");
-
-	sprintf(str, "/etc/ucentral/ucentral.cfg.%010ld", uuid);
-	execlp("/usr/libexec/ucentral/ucentral_apply.sh", "/usr/libexec/ucentral/ucentral_apply.sh", str, NULL);
-	exit(1);
-}
-
-static void
-apply_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
-{
-	if (ret) {
-		log_send("failed to apply config");
-		ULOG_ERR("apply task returned %d\n", ret);
-		config_init(0, id);
-		configure_reply(1, "failed to apply config", uuid, id);
-		return;
-	}
-	uuid_active = uuid_applied = uuid_latest;
-	ULOG_INFO("applied cfg:%ld\n", uuid_latest);
-	configure_reply(0, "applied config", uuid_active, id);
-	health_run(id);
-}
-
-struct task apply_task = {
-	.run_time = 60,
-	.run = apply_run_cb,
-	.complete = apply_complete_cb,
-};
-
-static void
 config_apply(uint32_t id)
 {
 	if (uuid_latest && (uuid_latest == uuid_applied))
 		return;
 	ULOG_INFO("applying cfg:%ld\n", uuid_latest);
-	task_run(&apply_task, uuid_latest, id);
+	apply_run(id);
 }
 
 void
