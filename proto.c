@@ -448,6 +448,30 @@ error_handle(struct blob_attr **rpc)
 }
 
 static void
+blink_handle(struct blob_attr **rpc)
+{
+	enum {
+		BLINK_DURATION,
+		__BLINK_MAX,
+	};
+
+	static const struct blobmsg_policy blink_policy[__BLINK_MAX] = {
+		[BLINK_DURATION] = { .name = "blink", .type = BLOBMSG_TYPE_INT32 },
+	};
+
+	struct blob_attr *tb[__BLINK_MAX] = {};
+	uint32_t duration = 60;
+
+	blobmsg_parse(blink_policy, __BLINK_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
+		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+
+	if (tb[BLINK_DURATION])
+		duration = blobmsg_get_u32(tb[BLINK_DURATION]);
+
+	blink_run(duration);
+}
+
+static void
 proto_handle_blob(void)
 {
 	struct blob_attr *rpc[__JSONRPC_MAX] = {};
@@ -472,6 +496,8 @@ proto_handle_blob(void)
 			 !strcmp(method, "factory") ||
 			 !strcmp(method, "upgrade"))
 			action_handle(rpc, method);
+		else if (!strcmp(method, "blink"))
+			blink_handle(rpc);
 	}
 
 	if (rpc[JSONRPC_ERROR])
