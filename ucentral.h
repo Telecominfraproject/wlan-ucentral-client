@@ -19,8 +19,11 @@
 #define ULOG_DBG(fmt, ...) ulog(LOG_DEBUG, fmt, ## __VA_ARGS__)
 
 #define USYNC_CERT	"/etc/ucentral/cert.pem"
-#define USYNC_CONFIG	 "/etc/ucentral/"
-#define USYNC_STATE	 "/tmp/ucentral.state"
+#define USYNC_CONFIG	"/etc/ucentral/"
+#define USYNC_STATE	"/tmp/ucentral.state"
+#define USYNC_TMP	"/tmp/ucentral.cfg"
+#define USYNC_LATEST	"/etc/ucentral/ucentral.active"
+
 
 struct client_config {
 	const char *server;
@@ -82,6 +85,8 @@ void health_run(uint32_t id);
 void health_deinit(void);
 
 void apply_run(uint32_t id);
+
+void verify_run(uint32_t id);
 
 void task_run(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);
