@@ -1,0 +1,7 @@
+variables:
+  CI_FEED_BUILD_DEPENDS: base packages
+  CI_TARGET_BUILD_DEPENDS: ubus libwebsockets
+
+include:
+  - remote: https://gitlab.com/ynezz/openwrt-ci/raw/master/openwrt-ci/gitlab/main.yml
+  - remote: https://gitlab.com/ynezz/openwrt-ci/raw/master/openwrt-ci/gitlab/pipeline.yml
