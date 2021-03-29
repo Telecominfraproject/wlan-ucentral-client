@@ -32,6 +32,7 @@ enum {
 	PARAMS_COMMAND,
 	PARAMS_CONFIG,
 	PARAMS_PAYLOAD,
+	PARAMS_REJECTED,
 	__PARAMS_MAX,
 };
 
@@ -41,6 +42,7 @@ static const struct blobmsg_policy params_policy[__PARAMS_MAX] = {
 	[PARAMS_CONFIG] = { .name = "config", .type = BLOBMSG_TYPE_TABLE },
 	[PARAMS_COMMAND] = { .name = "command", .type = BLOBMSG_TYPE_STRING },
 	[PARAMS_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
+	[PARAMS_REJECTED] = { .name = "rejected", .type = BLOBMSG_TYPE_ARRAY },
 };
 
 static void
@@ -323,14 +325,22 @@ configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)
 
 	c = result_new_blob(id, uuid);
 	s = blobmsg_open_table(&result, "status");
-	blobmsg_add_u32(&result, "error", error);
 	blobmsg_add_string(&result, "text", text);
 	if (blob_len(rejected.head)) {
-		r = blobmsg_open_table(&result, "rejected");
-		blobmsg_for_each_attr(b, rejected.head, rem)
-			blobmsg_add_blob(&result, b);
-		blobmsg_close_table(&result, r);
+		struct blob_attr *tb[__PARAMS_MAX] = {};
+
+		blobmsg_parse(params_policy, __PARAMS_MAX, tb, blob_data(rejected.head),
+			      blob_len(rejected.head));
+		if (tb[PARAMS_REJECTED]) {
+			r = blobmsg_open_array(&result, "rejected");
+			blobmsg_for_each_attr(b, tb[PARAMS_REJECTED], rem)
+				blobmsg_add_blob(&result, b);
+			blobmsg_close_array(&result, r);
+		}
+		if (!error)
+			error = 1;
 	}
+	blobmsg_add_u32(&result, "error", error);
 	blobmsg_close_table(&result, s);
 	blobmsg_close_table(&result, c);
 	result_send_blob();
