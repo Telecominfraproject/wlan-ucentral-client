@@ -469,7 +469,7 @@ blink_handle(struct blob_attr **rpc)
 	};
 
 	static const struct blobmsg_policy blink_policy[__BLINK_MAX] = {
-		[BLINK_DURATION] = { .name = "blink", .type = BLOBMSG_TYPE_INT32 },
+		[BLINK_DURATION] = { .name = "duration", .type = BLOBMSG_TYPE_INT32 },
 	};
 
 	struct blob_attr *tb[__BLINK_MAX] = {};
