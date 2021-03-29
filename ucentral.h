@@ -55,6 +55,8 @@ extern time_t uuid_latest;
 extern time_t uuid_active;
 extern time_t uuid_applied;
 
+extern struct blob_buf rejected;
+
 void config_init(int apply, uint32_t id);
 int config_verify(struct blob_attr *attr, uint32_t id);
 
@@ -76,6 +78,7 @@ void proto_free(void);
 void configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id);
 
 void config_deinit(void);
+void config_rejected(struct blob_attr *b);
 
 void ubus_init(void);
 void ubus_deinit(void);

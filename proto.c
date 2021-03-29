@@ -314,12 +314,20 @@ result_send_error(uint32_t error, char *text, uint32_t retcode, uint32_t id)
 void
 configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)
 {
-	void *c, *s;
+	struct blob_attr *b;
+	void *c, *s, *r;
+	int rem;
 
 	c = result_new_blob(id, uuid);
 	s = blobmsg_open_table(&result, "status");
 	blobmsg_add_u32(&result, "error", error);
 	blobmsg_add_string(&result, "text", text);
+	if (blob_len(rejected.head)) {
+		r = blobmsg_open_table(&result, "rejected");
+		blobmsg_for_each_attr(b, rejected.head, rem)
+			blobmsg_add_blob(&result, b);
+		blobmsg_close_table(&result, r);
+	}
 	blobmsg_close_table(&result, s);
 	blobmsg_close_table(&result, c);
 	result_send_blob();

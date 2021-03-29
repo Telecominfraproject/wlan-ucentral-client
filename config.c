@@ -13,14 +13,27 @@ static const struct blobmsg_policy config_policy[__CONFIG_MAX] = {
 
 static struct blob_attr *config_tb[__CONFIG_MAX];
 static struct blob_buf cfg;
+struct blob_buf rejected;
 
 time_t uuid_applied = 0;
 time_t uuid_latest = 0;
 time_t uuid_active = 0;
 
+void
+config_rejected(struct blob_attr *b)
+{
+	struct blob_attr *a;
+	int rem;
+
+	blob_buf_init(&rejected, 0);
+	blobmsg_for_each_attr(a, b, rem)
+		blobmsg_add_blob(&rejected, a);
+}
+
 static time_t
 config_load(const char *path)
 {
+	blob_buf_init(&rejected, 0);
 	blob_buf_init(&cfg, 0);
 	if (!blobmsg_add_json_from_file(&cfg, path)) {
 		ULOG_ERR("failed to load %s\n", path);
