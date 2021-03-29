@@ -318,6 +318,9 @@ configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)
 	void *c, *s, *r;
 	int rem;
 
+	if (!id)
+		return;
+
 	c = result_new_blob(id, uuid);
 	s = blobmsg_open_table(&result, "status");
 	blobmsg_add_u32(&result, "error", error);
