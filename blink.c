@@ -20,6 +20,7 @@ static void
 blink_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
 	blink_running = 0;
+	result_send_error(ret ? 1 : 0, "led blinking completed", ret, id);
 }
 
 struct task blink_task = {
@@ -28,12 +29,14 @@ struct task blink_task = {
 };
 
 void
-blink_run(uint32_t duration)
+blink_run(uint32_t duration, uint32_t id)
 {
-	if (blink_running)
+	if (blink_running) {
+		result_send_error(1, "command already running", 1, id);
 		return;
+	}
 
 	blink_task.run_time = duration + 15;
 	blink_running = 1;
-	task_run(&blink_task, duration, 0);
+	task_run(&blink_task, duration, id);
 }

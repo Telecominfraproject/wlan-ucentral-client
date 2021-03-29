@@ -474,14 +474,18 @@ blink_handle(struct blob_attr **rpc)
 
 	struct blob_attr *tb[__BLINK_MAX] = {};
 	uint32_t duration = 60;
+	uint32_t id = 0;
 
 	blobmsg_parse(blink_policy, __BLINK_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
 		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
 
+	if (rpc[JSONRPC_ID])
+		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
 	if (tb[BLINK_DURATION])
 		duration = blobmsg_get_u32(tb[BLINK_DURATION]);
 
-	blink_run(duration);
+	blink_run(duration, id);
 }
 
 static void

@@ -83,7 +83,7 @@ void config_rejected(struct blob_attr *b);
 void ubus_init(void);
 void ubus_deinit(void);
 
-void blink_run(uint32_t duration);
+void blink_run(uint32_t duration, uint32_t id);
 
 void health_run(uint32_t id);
 void health_deinit(void);
