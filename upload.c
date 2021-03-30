@@ -18,7 +18,8 @@ upload_run_cb(time_t uuid)
 		ULOG_INFO("failed to start upload task\n");
 		exit(1);
 	}
-	ULOG_INFO("running upload task\n");
+	ULOG_INFO("Calling /usr/bin/curl -F %s -f %s %s %s", name,  file, upload_uri,
+	          client.selfsigned ? "--insecure" : "");
 
 	execlp("/usr/bin/curl", "/usr/bin/curl",
 	       "-F", name, "-f", file, upload_uri,

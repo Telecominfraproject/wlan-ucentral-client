@@ -103,6 +103,10 @@ void failsafe_init(void);
 void task_run(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);
 
+void crashlog_init(void);
+void crashlog_send(struct blob_attr *b);
+
+
 static inline void safe_free(char **mem)
 {
 	if (!*mem)

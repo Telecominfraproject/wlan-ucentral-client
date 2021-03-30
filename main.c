@@ -161,6 +161,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		conn_time = time(NULL);
 		websocket = wsi;
 		connect_send();
+		crashlog_init();
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
