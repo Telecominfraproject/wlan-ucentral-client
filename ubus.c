@@ -135,6 +135,16 @@ static int ubus_stats_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+static int ubus_upload_cb(struct ubus_context *ctx,
+			  struct ubus_object *obj,
+			  struct ubus_request_data *req,
+			  const char *method, struct blob_attr *msg)
+{
+	upload_run(msg);
+
+	return UBUS_STATUS_OK;
+}
+
 static int ubus_rejected_cb(struct ubus_context *ctx,
 			    struct ubus_object *obj,
 			    struct ubus_request_data *req,
@@ -154,6 +164,7 @@ static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD_NOARG("log", ubus_log_cb),
 	UBUS_METHOD_NOARG("simulate", ubus_simulate_cb),
 	UBUS_METHOD_NOARG("rejected", ubus_rejected_cb),
+	UBUS_METHOD_NOARG("upload", ubus_upload_cb),
 };
 
 static struct ubus_object_type ubus_object_type =

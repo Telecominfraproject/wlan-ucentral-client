@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
+#define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -32,6 +34,7 @@ struct client_config {
 	const char *path;
 	const char *serial;
 	const char *firmware;
+	int selfsigned;
 	int debug;
 };
 extern struct client_config client;
@@ -88,6 +91,8 @@ void blink_run(uint32_t duration, uint32_t id);
 void health_run(uint32_t id);
 void health_deinit(void);
 
+void upload_run(struct blob_attr *b);
+
 void apply_run(uint32_t id);
 extern int apply_pending;
 
@@ -97,3 +102,11 @@ void failsafe_init(void);
 
 void task_run(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);
+
+static inline void safe_free(char **mem)
+{
+	if (!*mem)
+		return;
+	free(*mem);
+	*mem = NULL;
+}

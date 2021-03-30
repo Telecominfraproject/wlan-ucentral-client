@@ -394,7 +394,7 @@ perform_handle(struct blob_attr **rpc)
 }
 
 static void
-action_handle(struct blob_attr **rpc, char *command)
+action_handle(struct blob_attr **rpc, char *command, int reply)
 {
 	struct blob_attr *tb[__PARAMS_MAX] = {};
 	uint32_t id = 0;
@@ -425,10 +425,12 @@ action_handle(struct blob_attr **rpc, char *command)
 	}
 
 	if (cmd_run(action.head, id)) {
-		result_send_error(1, "failed to queue command", 1, id);
+		if (reply)
+			result_send_error(1, "failed to queue command", 1, id);
 		return;
 	}
-	result_send_error(0, "triggered command action", 0, id);
+	if (reply)
+		result_send_error(0, "triggered command action", 0, id);
 }
 
 static void
@@ -511,9 +513,10 @@ proto_handle_blob(void)
 			perform_handle(rpc);
 		else if (!strcmp(method, "reboot") ||
 			 !strcmp(method, "factory") ||
-			 !strcmp(method, "trace") ||
 			 !strcmp(method, "upgrade"))
-			action_handle(rpc, method);
+			action_handle(rpc, method, 1);
+		else if (!strcmp(method, "trace"))
+			action_handle(rpc, method, 0);
 		else if (!strcmp(method, "blink"))
 			blink_handle(rpc);
 	}

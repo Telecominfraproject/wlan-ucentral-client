@@ -64,9 +64,11 @@ sul_connect_attempt(struct lws_sorted_usec_list *sul)
 	vhd->i.path = client.path;
 	vhd->i.host = vhd->i.address;
 	vhd->i.origin = vhd->i.address;
-	vhd->i.ssl_connection = LCCSCF_USE_SSL |
-		LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK |
-		LCCSCF_ALLOW_SELFSIGNED;
+	vhd->i.ssl_connection = LCCSCF_USE_SSL;
+	if (client.selfsigned)
+		vhd->i.ssl_connection |=
+			LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK |
+			LCCSCF_ALLOW_SELFSIGNED;
 
 	vhd->i.protocol = "ucentral-broker";
 	vhd->i.pwsi = &vhd->client_wsi;
@@ -203,6 +205,7 @@ periodic_cb(struct uloop_timeout *t)
 static int print_usage(const char *daemon)
 {
 	fprintf(stderr, "Usage: %s [options]\n"
+			"\t-i <insecure/selfsigned>\n"
 			"\t-S <serial>\n"
 			"\t-s <server>\n"
 			"\t-P <port>\n"
@@ -218,7 +221,7 @@ int main(int argc, char **argv)
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "S:s:P:v:f:d")) != -1) {
+	while ((ch = getopt(argc, argv, "S:s:P:v:f:di")) != -1) {
 		switch (ch) {
 		case 's':
 			client.server = optarg;
@@ -237,6 +240,9 @@ int main(int argc, char **argv)
 			break;
 		case 'S':
 			client.serial = optarg;
+			break;
+		case 'i':
+			client.selfsigned = 1;
 			break;
 		case 'h':
 		default:
