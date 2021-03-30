@@ -511,6 +511,7 @@ proto_handle_blob(void)
 			perform_handle(rpc);
 		else if (!strcmp(method, "reboot") ||
 			 !strcmp(method, "factory") ||
+			 !strcmp(method, "trace") ||
 			 !strcmp(method, "upgrade"))
 			action_handle(rpc, method);
 		else if (!strcmp(method, "blink"))
