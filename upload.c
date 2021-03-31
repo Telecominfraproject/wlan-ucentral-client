@@ -18,13 +18,14 @@ upload_run_cb(time_t uuid)
 		ULOG_INFO("failed to start upload task\n");
 		exit(1);
 	}
-	ULOG_INFO("Calling /usr/bin/curl -F %s -f %s %s %s", name,  file, upload_uri,
+	ULOG_INFO("Calling /usr/bin/curl -F %s -F %s %s %s", name,  file, upload_uri,
 	          client.selfsigned ? "--insecure" : "");
 
 	execlp("/usr/bin/curl", "/usr/bin/curl",
-	       "-F", name, "-f", file, upload_uri,
+	       "-F", name, "-F", file, upload_uri,
 	       client.selfsigned ? "--insecure" : NULL,
 	       NULL);
+	ULOG_ERR("curl was not executed");
 	exit(1);
 }
 
@@ -34,6 +35,7 @@ upload_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 	upload_pending = 0;
 
 	if (ret) {
+		ULOG_ERR("ucentral: curl returned (%d)", ret);
 		log_send("failed to upload file");
 		return;
 	}
