@@ -23,7 +23,7 @@ void
 config_rejected(struct blob_attr *b)
 {
 	struct blob_attr *a;
-	int rem;
+	size_t rem;
 
 	blob_buf_init(&rejected, 0);
 	blobmsg_for_each_attr(a, b, rem)

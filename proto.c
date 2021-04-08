@@ -178,7 +178,7 @@ raw_send(struct blob_attr *a)
 	struct blob_attr *tb[__PARAMS_MAX] = {};
 	struct blob_attr *b;
 	void *m;
-	int rem;
+	size_t rem;
 
 	blobmsg_parse(raw_policy, __RAW_MAX, tb, blob_data(a), blob_len(a));
 	if (!tb[RAW_METHOD] || !tb[RAW_PARAMS])
@@ -197,7 +197,7 @@ result_send(uint32_t id, struct blob_attr *a)
 {
 	struct blob_attr *b;
 	void *m, *s;
-	int rem;
+	size_t rem;
 
 	m = result_new_blob(id, uuid_active);
 	s = blobmsg_open_table(&result, "status");
@@ -213,7 +213,7 @@ stats_send(struct blob_attr *a)
 {
 	struct blob_attr *b;
 	void *c;
-	int rem;
+	size_t rem;
 
 	blob_buf_init(&proto, 0);
 	blobmsg_add_string(&proto, "jsonrpc", "2.0");
@@ -281,7 +281,7 @@ health_send(uint32_t sanity, struct blob_attr *a)
 	void *m = proto_new_blob("healthcheck");
 	struct blob_attr *b;
 	void *c;
-	int rem;
+	size_t rem;
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_u64(&proto, "uuid", uuid_active);
@@ -300,7 +300,7 @@ crashlog_send(struct blob_attr *a)
 	void *m = proto_new_blob("crashlog");
 	struct blob_attr *b;
 	void *c;
-	int rem;
+	size_t rem;
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_u64(&proto, "uuid", uuid_active);
@@ -335,7 +335,7 @@ configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)
 {
 	struct blob_attr *b;
 	void *c, *s, *r;
-	int rem;
+	size_t rem;
 
 	if (!id)
 		return;
@@ -434,7 +434,7 @@ action_handle(struct blob_attr **rpc, char *command, int reply)
 	if (rpc[JSONRPC_PARAMS]) {
 		void *c = blobmsg_open_table(&action, "payload");
 		struct blob_attr *b;
-		int rem;
+		size_t rem;
 
 		blobmsg_for_each_attr(b, rpc[JSONRPC_PARAMS], rem)
 			blobmsg_add_blob(&action, b);
@@ -561,7 +561,7 @@ proto_handle_simulate(struct blob_attr *a)
 {
 	struct blob_attr *b;
 	char *msg;
-	int rem;
+	size_t rem;
 
 	blob_buf_init(&proto, 0);
 	blobmsg_for_each_attr(b, a, rem)
