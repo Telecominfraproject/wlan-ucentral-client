@@ -480,6 +480,50 @@ error_handle(struct blob_attr **rpc)
 }
 
 static void
+request_handle(struct blob_attr **rpc)
+{
+	enum {
+		REQUEST_MESSAGE,
+		__REQUEST_MAX,
+	};
+
+	static const struct blobmsg_policy request_policy[__REQUEST_MAX] = {
+		[REQUEST_MESSAGE] = { .name = "message", .type = BLOBMSG_TYPE_STRING },
+	};
+
+	struct blob_attr *tb[__REQUEST_MAX] = {};
+	char *message;
+	uint32_t id = 0;
+
+	blobmsg_parse(request_policy, __REQUEST_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
+		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+
+	if (rpc[JSONRPC_ID])
+		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
+	if (!tb[REQUEST_MESSAGE]) {
+		result_send_error(1, "invalid parameters", 1, id);
+		return;
+	}
+
+	message = blobmsg_get_string(tb[REQUEST_MESSAGE]);
+
+	if (!strcmp(message, "state")) {
+		int ret = system("/etc/init.d/ustats restart");
+		if (ret) {
+			result_send_error(1, "failed to execute ustats", ret, id);
+			return;
+		}
+	} else if (!strcmp(message, "healthcheck")) {
+		health_run(id, 1);
+	} else {
+		result_send_error(1, "invalid parameters", 1, id);
+		return;
+	}
+	result_send_error(0, "success", 0, id);
+}
+
+static void
 blink_handle(struct blob_attr **rpc)
 {
 	enum {
@@ -534,8 +578,10 @@ proto_handle_blob(void)
 			action_handle(rpc, method, 1);
 		else if (!strcmp(method, "trace"))
 			action_handle(rpc, method, 0);
-		else if (!strcmp(method, "blink"))
+		else if (!strcmp(method, "leds"))
 			blink_handle(rpc);
+		else if (!strcmp(method, "request"))
+			request_handle(rpc);
 	}
 
 	if (rpc[JSONRPC_ERROR])

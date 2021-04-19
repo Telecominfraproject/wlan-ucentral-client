@@ -27,8 +27,12 @@ struct task health_task = {
 };
 
 void
-health_run(uint32_t id)
+health_run(uint32_t id, uint32_t immediate)
 {
+	if (immediate)
+		health_task.delay = 0;
+	else
+		health_task.delay = 120;
 	task_stop(&health_task);
 	task_run(&health_task, uuid_active, id);
 }

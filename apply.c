@@ -31,7 +31,7 @@ apply_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 	uuid_active = uuid_applied = uuid_latest;
 	ULOG_INFO("applied cfg:%ld\n", uuid_latest);
 	configure_reply(0, "applied config", uuid_active, id);
-	health_run(id);
+	health_run(id, 0);
 }
 
 struct task apply_task = {
