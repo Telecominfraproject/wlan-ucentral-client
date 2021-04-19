@@ -388,7 +388,7 @@ configure_handle(struct blob_attr **rpc)
 }
 
 static void
-action_handle(struct blob_attr **rpc, char *command, int reply)
+action_handle(struct blob_attr **rpc, char *command, int reply, int delay)
 {
 	struct blob_attr *tb[__PARAMS_MAX] = {};
 	uint32_t id = 0;
@@ -406,7 +406,7 @@ action_handle(struct blob_attr **rpc, char *command, int reply)
 
 	blob_buf_init(&action, 0);
 	blobmsg_add_string(&action, "command", command);
-	blobmsg_add_u32(&action, "delay", 10);
+	blobmsg_add_u32(&action, "delay", delay);
 	blobmsg_add_u32(&action, "timeout", 60 * 10);
 	if (rpc[JSONRPC_PARAMS]) {
 		void *c = blobmsg_open_table(&action, "payload");
@@ -531,7 +531,7 @@ leds_handle(struct blob_attr **rpc)
 		blink_run(duration, id);
 		return;
 	}
-	action_handle(rpc, "leds", 1);
+	action_handle(rpc, "leds", 1, 1);
 }
 
 static void
@@ -556,10 +556,10 @@ proto_handle_blob(void)
 		else if (!strcmp(method, "reboot") ||
 			 !strcmp(method, "factory") ||
 			 !strcmp(method, "upgrade"))
-			action_handle(rpc, method, 1);
+			action_handle(rpc, method, 1, 10);
 		else if (!strcmp(method, "perform") ||
 			 !strcmp(method, "trace"))
-			action_handle(rpc, method, 0);
+			action_handle(rpc, method, 0, 1);
 		else if (!strcmp(method, "leds"))
 			leds_handle(rpc);
 		else if (!strcmp(method, "request"))
