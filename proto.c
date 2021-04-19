@@ -388,29 +388,6 @@ configure_handle(struct blob_attr **rpc)
 }
 
 static void
-perform_handle(struct blob_attr **rpc)
-{
-	struct blob_attr *tb[__PARAMS_MAX] = {};
-	uint32_t id = 0;
-
-	blobmsg_parse(params_policy, __PARAMS_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
-		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
-
-	if (rpc[JSONRPC_ID])
-		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
-
-	if (!tb[PARAMS_SERIAL] || !tb[PARAMS_COMMAND] || !tb[PARAMS_PAYLOAD]) {
-		result_send_error(1, "invalid parameters", 1, id);
-		return;
-	}
-
-	if (cmd_run(rpc[JSONRPC_PARAMS], id)) {
-		result_send_error(1, "failed to queue command", 1, id);
-		return;
-	}
-}
-
-static void
 action_handle(struct blob_attr **rpc, char *command, int reply)
 {
 	struct blob_attr *tb[__PARAMS_MAX] = {};
@@ -570,13 +547,12 @@ proto_handle_blob(void)
 
 		if (!strcmp(method, "configure"))
 			configure_handle(rpc);
-		else if (!strcmp(method, "perform"))
-			perform_handle(rpc);
 		else if (!strcmp(method, "reboot") ||
 			 !strcmp(method, "factory") ||
 			 !strcmp(method, "upgrade"))
 			action_handle(rpc, method, 1);
-		else if (!strcmp(method, "trace"))
+		else if (!strcmp(method, "perform") ||
+			 !strcmp(method, "trace"))
 			action_handle(rpc, method, 0);
 		else if (!strcmp(method, "leds"))
 			blink_handle(rpc);
