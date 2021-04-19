@@ -501,31 +501,37 @@ request_handle(struct blob_attr **rpc)
 }
 
 static void
-blink_handle(struct blob_attr **rpc)
+leds_handle(struct blob_attr **rpc)
 {
 	enum {
-		BLINK_DURATION,
-		__BLINK_MAX,
+		LED_DURATION,
+		LED_PATTERN,
+		__LED_MAX,
 	};
 
-	static const struct blobmsg_policy blink_policy[__BLINK_MAX] = {
-		[BLINK_DURATION] = { .name = "duration", .type = BLOBMSG_TYPE_INT32 },
+	static const struct blobmsg_policy led_policy[__LED_MAX] = {
+		[LED_DURATION] = { .name = "duration", .type = BLOBMSG_TYPE_INT32 },
+		[LED_PATTERN] = { .name = "pattern", .type = BLOBMSG_TYPE_STRING },
 	};
 
-	struct blob_attr *tb[__BLINK_MAX] = {};
+	struct blob_attr *tb[__LED_MAX] = {};
 	uint32_t duration = 60;
 	uint32_t id = 0;
 
-	blobmsg_parse(blink_policy, __BLINK_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
+	blobmsg_parse(led_policy, __LED_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
 		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
 
 	if (rpc[JSONRPC_ID])
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
 
-	if (tb[BLINK_DURATION])
-		duration = blobmsg_get_u32(tb[BLINK_DURATION]);
+	if (tb[LED_DURATION])
+		duration = blobmsg_get_u32(tb[LED_DURATION]);
 
-	blink_run(duration, id);
+	if (!strcmp(blobmsg_get_string(tb[LED_PATTERN]), "blink")) {
+		blink_run(duration, id);
+		return;
+	}
+	action_handle(rpc, "leds", 1);
 }
 
 static void
@@ -555,7 +561,7 @@ proto_handle_blob(void)
 			 !strcmp(method, "trace"))
 			action_handle(rpc, method, 0);
 		else if (!strcmp(method, "leds"))
-			blink_handle(rpc);
+			leds_handle(rpc);
 		else if (!strcmp(method, "request"))
 			request_handle(rpc);
 	}
