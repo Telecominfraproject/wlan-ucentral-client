@@ -155,13 +155,41 @@ static int ubus_rejected_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+enum {
+	REALTIME_EVENT,
+	REALTIME_PAYLOAD,
+	__REALTIME_MAX,
+};
+
+static const struct blobmsg_policy event_policy[__REALTIME_MAX] = {
+	[REALTIME_EVENT] = { .name = "event", .type = BLOBMSG_TYPE_STRING },
+	[REALTIME_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
+};
+
+static int ubus_event_cb(struct ubus_context *ctx,
+			    struct ubus_object *obj,
+			    struct ubus_request_data *req,
+			    const char *method, struct blob_attr *msg)
+{
+	struct blob_attr *tb[__REALTIME_MAX] = {};
+
+	blobmsg_parse(event_policy, __REALTIME_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
+	if (!tb[REALTIME_EVENT] || !tb[REALTIME_PAYLOAD])
+		return UBUS_STATUS_INVALID_ARGUMENT;
+
+	event_add(blobmsg_get_string(tb[REALTIME_EVENT]), tb[REALTIME_PAYLOAD]);
+
+	return UBUS_STATUS_OK;
+}
+
 static const struct ubus_method ucentral_methods[] = {
-	UBUS_METHOD_NOARG("status", ubus_status_cb),
 	UBUS_METHOD("health", ubus_health_cb, health_policy),
-	UBUS_METHOD_NOARG("stats", ubus_stats_cb),
-	UBUS_METHOD_NOARG("send", ubus_send_cb),
 	UBUS_METHOD("result", ubus_result_cb, result_policy),
 	UBUS_METHOD("log", ubus_log_cb, log_policy),
+	UBUS_METHOD("event", ubus_event_cb, event_policy),
+	UBUS_METHOD_NOARG("status", ubus_status_cb),
+	UBUS_METHOD_NOARG("stats", ubus_stats_cb),
+	UBUS_METHOD_NOARG("send", ubus_send_cb),
 	UBUS_METHOD_NOARG("simulate", ubus_simulate_cb),
 	UBUS_METHOD_NOARG("rejected", ubus_rejected_cb),
 	UBUS_METHOD_NOARG("upload", ubus_upload_cb),

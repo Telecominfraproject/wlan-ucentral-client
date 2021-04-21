@@ -51,11 +51,6 @@ send_blob(struct blob_buf *blob)
 	char *msg;
 	int len;
 
-	if (!websocket) {
-		ULOG_ERR("trying to send data while not connected\n");
-		return;
-	}
-
 	msg = blobmsg_format_json(blob->head, true);
 	len = strlen(msg) + 1;
 
@@ -64,7 +59,9 @@ send_blob(struct blob_buf *blob)
 	memset(msg, 0, LWS_PRE);
 
 	ULOG_DBG("TX: %s\n", &msg[LWS_PRE]);
-	if (lws_write(websocket, (unsigned char *)&msg[LWS_PRE], len - 1, LWS_WRITE_TEXT) < 0)
+	if (!websocket)
+		ULOG_ERR("trying to send data while not connected\n");
+	else if (lws_write(websocket, (unsigned char *)&msg[LWS_PRE], len - 1, LWS_WRITE_TEXT) < 0)
 		ULOG_ERR("failed to send message\n");
 
 	free(msg);
@@ -535,6 +532,46 @@ leds_handle(struct blob_attr **rpc)
 }
 
 static void
+event_handle(struct blob_attr **rpc)
+{
+	enum {
+		REALTIME_TYPES,
+		__REALTIME_MAX,
+	};
+
+	static const struct blobmsg_policy event_policy[__REALTIME_MAX] = {
+		[REALTIME_TYPES] = { .name = "types", .type = BLOBMSG_TYPE_ARRAY },
+	};
+
+	struct blob_attr *tb[__REALTIME_MAX] = {};
+	struct blob_attr *b;
+	uint32_t id = 0;
+	void *m, *s;
+	int rem;
+
+	blobmsg_parse(event_policy, __REALTIME_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
+		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+
+	if (rpc[JSONRPC_ID])
+		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
+	m = result_new_blob(id, uuid_active);
+	s = blobmsg_open_table(&result, "events");
+	if (tb[REALTIME_TYPES])
+		blobmsg_for_each_attr(b, tb[REALTIME_TYPES], rem) {
+			if (blobmsg_type(b) != BLOBMSG_TYPE_STRING)
+				continue;
+			event_dump(&result, blobmsg_get_string(b));
+		}
+	else
+		event_dump_all(&result);
+
+	blobmsg_close_table(&result, s);
+	blobmsg_close_table(&result, m);
+	result_send_blob();
+}
+
+static void
 proto_handle_blob(void)
 {
 	struct blob_attr *rpc[__JSONRPC_MAX] = {};
@@ -565,6 +602,8 @@ proto_handle_blob(void)
 			leds_handle(rpc);
 		else if (!strcmp(method, "request"))
 			request_handle(rpc);
+		else if (!strcmp(method, "event"))
+			event_handle(rpc);
 	}
 
 	if (rpc[JSONRPC_ERROR])

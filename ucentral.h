@@ -106,6 +106,10 @@ void task_stop(struct task *task);
 void crashlog_init(void);
 void crashlog_send(struct blob_attr *b);
 
+void event_add(char *event, struct blob_attr *payload);
+void event_dump(struct blob_buf *b, char *type);
+void event_dump_all(struct blob_buf *b);
+
 
 static inline void safe_free(char **mem)
 {
