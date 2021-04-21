@@ -36,20 +36,20 @@ static int ubus_send_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+enum {
+	LOG_MSG,
+	__LOG_MAX,
+};
+
+static const struct blobmsg_policy log_policy[__LOG_MAX] = {
+	[LOG_MSG] = { .name = "msg", .type = BLOBMSG_TYPE_STRING },
+};
+
 static int ubus_log_cb(struct ubus_context *ctx,
 		       struct ubus_object *obj,
 		       struct ubus_request_data *req,
 		       const char *method, struct blob_attr *msg)
 {
-	enum {
-		LOG_MSG,
-		__LOG_MAX,
-	};
-
-	static const struct blobmsg_policy log_policy[__LOG_MAX] = {
-		[LOG_MSG] = { .name = "msg", .type = BLOBMSG_TYPE_STRING },
-	};
-
 	struct blob_attr *tb[__LOG_MAX] = {};
 
 	blobmsg_parse(log_policy, __LOG_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
@@ -61,22 +61,22 @@ static int ubus_log_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+enum {
+	HEALTH_SANITY,
+	HEALTH_DATA,
+	__HEALTH_MAX,
+};
+
+static const struct blobmsg_policy health_policy[__HEALTH_MAX] = {
+	[HEALTH_SANITY] = { .name = "sanity", .type = BLOBMSG_TYPE_INT32 },
+	[HEALTH_DATA] = { .name = "data", .type = BLOBMSG_TYPE_TABLE },
+};
+
 static int ubus_health_cb(struct ubus_context *ctx,
 			  struct ubus_object *obj,
 			  struct ubus_request_data *req,
 			  const char *method, struct blob_attr *msg)
 {
-	enum {
-		HEALTH_SANITY,
-		HEALTH_DATA,
-		__HEALTH_MAX,
-	};
-
-	static const struct blobmsg_policy health_policy[__HEALTH_MAX] = {
-		[HEALTH_SANITY] = { .name = "sanity", .type = BLOBMSG_TYPE_INT32 },
-		[HEALTH_DATA] = { .name = "data", .type = BLOBMSG_TYPE_TABLE },
-	};
-
 	struct blob_attr *tb[__HEALTH_MAX] = {};
 
 	blobmsg_parse(health_policy, __HEALTH_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
@@ -98,22 +98,22 @@ static int ubus_simulate_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+enum {
+	RESULT_STATUS,
+	RESULT_ID,
+	__RESULT_MAX,
+};
+
+static const struct blobmsg_policy result_policy[__RESULT_MAX] = {
+	[RESULT_STATUS] = { .name = "status", .type = BLOBMSG_TYPE_TABLE },
+	[RESULT_ID] = { .name = "id", .type = BLOBMSG_TYPE_INT32 },
+};
+
 static int ubus_result_cb(struct ubus_context *ctx,
 			  struct ubus_object *obj,
 			  struct ubus_request_data *req,
 			  const char *method, struct blob_attr *msg)
 {
-	enum {
-		RESULT_STATUS,
-		RESULT_ID,
-		__RESULT_MAX,
-	};
-
-	static const struct blobmsg_policy result_policy[__RESULT_MAX] = {
-		[RESULT_STATUS] = { .name = "status", .type = BLOBMSG_TYPE_TABLE },
-		[RESULT_ID] = { .name = "id", .type = BLOBMSG_TYPE_INT32 },
-	};
-
 	struct blob_attr *tb[__RESULT_MAX] = {};
 
 	blobmsg_parse(result_policy, __RESULT_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
@@ -157,11 +157,11 @@ static int ubus_rejected_cb(struct ubus_context *ctx,
 
 static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD_NOARG("status", ubus_status_cb),
-	UBUS_METHOD_NOARG("health", ubus_health_cb),
+	UBUS_METHOD("health", ubus_health_cb, health_policy),
 	UBUS_METHOD_NOARG("stats", ubus_stats_cb),
 	UBUS_METHOD_NOARG("send", ubus_send_cb),
-	UBUS_METHOD_NOARG("result", ubus_result_cb),
-	UBUS_METHOD_NOARG("log", ubus_log_cb),
+	UBUS_METHOD("result", ubus_result_cb, result_policy),
+	UBUS_METHOD("log", ubus_log_cb, log_policy),
 	UBUS_METHOD_NOARG("simulate", ubus_simulate_cb),
 	UBUS_METHOD_NOARG("rejected", ubus_rejected_cb),
 	UBUS_METHOD_NOARG("upload", ubus_upload_cb),
