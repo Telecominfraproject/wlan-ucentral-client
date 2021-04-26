@@ -205,6 +205,8 @@ result_send(uint32_t id, struct blob_attr *a)
 	result_send_blob();
 }
 
+static char *stats_request_uuid;
+
 void
 stats_send(struct blob_attr *a)
 {
@@ -216,6 +218,11 @@ stats_send(struct blob_attr *a)
 	blobmsg_add_string(&proto, "jsonrpc", "2.0");
 	blobmsg_add_string(&proto, "method", "state");
 	c = blobmsg_open_table(&proto, "params");
+	if (stats_request_uuid) {
+		blobmsg_add_string(&proto, "request_uuid", stats_request_uuid);
+		free(stats_request_uuid);
+		stats_request_uuid = NULL;
+	}
 	if (blobmsg_data_len(a) >= 2 * 1024) {
 		char *source = blobmsg_format_json(a, true);
 		uLongf sourceLen = strlen(source) + 1;
@@ -272,6 +279,8 @@ log_send(char *message)
 	proto_send_blob();
 }
 
+static char *health_request_uuid;
+
 void
 health_send(uint32_t sanity, struct blob_attr *a)
 {
@@ -282,6 +291,11 @@ health_send(uint32_t sanity, struct blob_attr *a)
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_u64(&proto, "uuid", uuid_active);
+	if (health_request_uuid) {
+		blobmsg_add_string(&proto, "request_uuid", health_request_uuid);
+		free(health_request_uuid);
+		health_request_uuid = NULL;
+	}
 	blobmsg_add_u32(&proto, "sanity", sanity);
 	c = blobmsg_open_table(&proto, "data");
 	blobmsg_for_each_attr(b, a, rem)
@@ -458,15 +472,17 @@ request_handle(struct blob_attr **rpc)
 {
 	enum {
 		REQUEST_MESSAGE,
+		REQUEST_UUID,
 		__REQUEST_MAX,
 	};
 
 	static const struct blobmsg_policy request_policy[__REQUEST_MAX] = {
 		[REQUEST_MESSAGE] = { .name = "message", .type = BLOBMSG_TYPE_STRING },
+		[REQUEST_UUID] = { .name = "request_uuid", .type = BLOBMSG_TYPE_STRING },
 	};
 
 	struct blob_attr *tb[__REQUEST_MAX] = {};
-	char *message;
+	char *message, *uuid;
 	uint32_t id = 0;
 
 	blobmsg_parse(request_policy, __REQUEST_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
@@ -475,20 +491,25 @@ request_handle(struct blob_attr **rpc)
 	if (rpc[JSONRPC_ID])
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
 
-	if (!tb[REQUEST_MESSAGE]) {
+	if (!tb[REQUEST_MESSAGE] || !tb[REQUEST_UUID]) {
 		result_send_error(1, "invalid parameters", 1, id);
 		return;
 	}
 
 	message = blobmsg_get_string(tb[REQUEST_MESSAGE]);
+	uuid = blobmsg_get_string(tb[REQUEST_UUID]);
 
 	if (!strcmp(message, "state")) {
-		int ret = system("/etc/init.d/ustats restart");
+		int ret;
+
+		stats_request_uuid = strdup(uuid);
+		ret = system("/etc/init.d/ustats restart");
 		if (ret) {
 			result_send_error(1, "failed to execute ustats", ret, id);
 			return;
 		}
 	} else if (!strcmp(message, "healthcheck")) {
+		health_request_uuid = strdup(uuid);
 		health_run(id, 1);
 	} else {
 		result_send_error(1, "invalid parameters", 1, id);
