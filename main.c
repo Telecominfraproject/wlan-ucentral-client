@@ -64,11 +64,9 @@ sul_connect_attempt(struct lws_sorted_usec_list *sul)
 	vhd->i.path = client.path;
 	vhd->i.host = vhd->i.address;
 	vhd->i.origin = vhd->i.address;
-	vhd->i.ssl_connection = LCCSCF_USE_SSL;
+	vhd->i.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
 	if (client.selfsigned)
-		vhd->i.ssl_connection |=
-			LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK |
-			LCCSCF_ALLOW_SELFSIGNED;
+		vhd->i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
 
 	vhd->i.protocol = "ucentral-broker";
 	vhd->i.pwsi = &vhd->client_wsi;
@@ -235,6 +233,7 @@ int main(int argc, char **argv)
 			break;
 		case 'd':
 			client.debug = 1;
+			logs |= LLL_DEBUG;
 			break;
 		case 'v':
 			client.path = optarg;
@@ -264,7 +263,9 @@ int main(int argc, char **argv)
 	memset(&info, 0, sizeof info);
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-	info.ssl_cert_filepath = USYNC_CERT;
+	info.client_ssl_cert_filepath = USYNC_CONFIG"client.crt";
+	info.ssl_ca_filepath = USYNC_CONFIG"server.ca";
+	info.ssl_cert_filepath = USYNC_CONFIG"server.crt";
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
 
