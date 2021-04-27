@@ -171,6 +171,8 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		ULOG_ERR("connection error: %s\n",
 			 in ? (char *)in : "(null)");
+		__attribute__ ((fallthrough));
+
 	case LWS_CALLBACK_CLIENT_CLOSED:
 		ULOG_INFO("connection closed\n");
 		websocket = NULL;
