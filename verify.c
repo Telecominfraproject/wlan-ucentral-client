@@ -10,7 +10,7 @@ verify_run_cb(time_t uuid)
 	ULOG_INFO("running verify task\n");
 
 	sprintf(str, "%010ld", uuid);
-	execlp("/usr/libexec/ucentral/ucentral_verify.sh", "/usr/libexec/ucentral/ucentral_verify.sh", USYNC_TMP, str, NULL);
+	execlp("/usr/libexec/ucentral/ucentral_verify.sh", "/usr/libexec/ucentral/ucentral_verify.sh", UCENTRAL_TMP, str, NULL);
 	exit(1);
 }
 

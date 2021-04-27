@@ -110,7 +110,7 @@ connect_send(void)
 	char path[PATH_MAX] = { };
 	void *c;
 
-	snprintf(path, PATH_MAX, "%s/capabilities.json", USYNC_CONFIG);
+	snprintf(path, PATH_MAX, "%s/capabilities.json", UCENTRAL_CONFIG);
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_string(&proto, "firmware", client.firmware);

@@ -21,10 +21,10 @@
 
 #define ULOG_DBG(fmt, ...) ulog(LOG_DEBUG, fmt, ## __VA_ARGS__)
 
-#define USYNC_CONFIG	"/etc/ucentral/"
-#define USYNC_STATE	"/tmp/ucentral.state"
-#define USYNC_TMP	"/tmp/ucentral.cfg"
-#define USYNC_LATEST	"/etc/ucentral/ucentral.active"
+#define UCENTRAL_CONFIG	"/etc/ucentral/"
+#define UCENTRAL_STATE	"/tmp/ucentral.state"
+#define UCENTRAL_TMP	"/tmp/ucentral.cfg"
+#define UCENTRAL_LATEST	"/etc/ucentral/ucentral.active"
 
 
 struct client_config {

@@ -67,7 +67,7 @@ config_init(int apply, uint32_t id)
 
 	uuid_active = 0;
 
-	snprintf(path, PATH_MAX, "%s/ucentral.cfg.*", USYNC_CONFIG);
+	snprintf(path, PATH_MAX, "%s/ucentral.cfg.*", UCENTRAL_CONFIG);
 	if (glob(path, 0, NULL, &gl)) {
 		failsafe_init();
 		return;
@@ -81,13 +81,13 @@ config_init(int apply, uint32_t id)
 	if (apply)
 		config_apply(id);
 
-	snprintf(path, PATH_MAX, "%s/ucentral.active", USYNC_CONFIG);
+	snprintf(path, PATH_MAX, "%s/ucentral.active", UCENTRAL_CONFIG);
 	if (readlink(path, link, PATH_MAX) < 0) {
 		ULOG_INFO("no active symlink found\n");
 		goto out;
 	}
 
-	snprintf(path, PATH_MAX, "%s/%s", USYNC_CONFIG, basename(link));
+	snprintf(path, PATH_MAX, "%s/%s", UCENTRAL_CONFIG, basename(link));
 	if (stat(path, &s)) {
 		ULOG_INFO("active config not found\n");
 		goto out;
@@ -122,15 +122,15 @@ config_verify(struct blob_attr *attr, uint32_t id)
 		ULOG_ERR("failed to format config\n");
 		goto err;
 	}
-	fp = fopen(USYNC_TMP, "w+");
+	fp = fopen(UCENTRAL_TMP, "w+");
 	if (!fp) {
 		log_send("failed to store config");
-		ULOG_ERR("failed to open %s\n", USYNC_TMP);
+		ULOG_ERR("failed to open %s\n", UCENTRAL_TMP);
 		goto err;
 	}
 	if (fwrite(cfg, strlen(cfg), 1, fp) != 1) {
 		log_send("failed to store config");
-		ULOG_ERR("failed to write %s\n", USYNC_TMP);
+		ULOG_ERR("failed to write %s\n", UCENTRAL_TMP);
 		goto err;
 	}
 	fclose(fp);

@@ -3,6 +3,8 @@
 #include <string.h>
 #include <signal.h>
 #include <getopt.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <libubox/uloop.h>
 
@@ -218,6 +220,7 @@ int main(int argc, char **argv)
 {
 	struct lws_context_creation_info info;
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
+	struct stat st;
 	int ch;
 
 	while ((ch = getopt(argc, argv, "S:s:P:v:f:di")) != -1) {
@@ -263,9 +266,10 @@ int main(int argc, char **argv)
 	memset(&info, 0, sizeof info);
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-	info.client_ssl_cert_filepath = USYNC_CONFIG"client.crt";
-	info.ssl_ca_filepath = USYNC_CONFIG"server.ca";
-	info.ssl_cert_filepath = USYNC_CONFIG"server.crt";
+	info.client_ssl_cert_filepath = UCENTRAL_CONFIG"cert.pem";
+	if (!stat(UCENTRAL_CONFIG"key.pem", &st))
+		info.client_ssl_private_key_filepath = UCENTRAL_CONFIG"key.pem";
+	info.ssl_ca_filepath = UCENTRAL_CONFIG"cas.pem";
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
 
