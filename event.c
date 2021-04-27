@@ -46,7 +46,7 @@ event_dump(struct blob_buf *b, char *type)
 	list_for_each_entry_safe(e, tmp, &events, list) {
 		struct blob_attr *a;
 		char *o, *p;
-		int rem;
+		size_t rem;
 
 		if (strcmp(e->event, type))
 			continue;
@@ -59,7 +59,13 @@ event_dump(struct blob_buf *b, char *type)
 		blobmsg_close_table(b, p);
 		blobmsg_close_array(b, o);
 		list_del(&e->list);
+#ifndef __clang_analyzer__
+		/* clang reports a false positive in event_dump_all()
+		 * warning: Use of memory after it is freed [unix.Malloc]
+                 * char *type = strdup(e->event);
+		 */
 		free(e);
+#endif
 	}
 
 	blobmsg_close_array(b, c);

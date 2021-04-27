@@ -568,7 +568,7 @@ event_handle(struct blob_attr **rpc)
 	struct blob_attr *b;
 	uint32_t id = 0;
 	void *m, *s;
-	int rem;
+	size_t rem;
 
 	blobmsg_parse(event_policy, __REALTIME_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
 		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
