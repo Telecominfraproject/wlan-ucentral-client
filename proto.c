@@ -577,6 +577,10 @@ event_handle(struct blob_attr **rpc)
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
 
 	m = result_new_blob(id, uuid_active);
+	s = blobmsg_open_table(&result, "status");
+	blobmsg_add_u32(&result, "error", 0);
+	blobmsg_add_string(&result, "text", "Success");
+	blobmsg_close_table(&result, s);
 	s = blobmsg_open_table(&result, "events");
 	if (tb[REALTIME_TYPES])
 		blobmsg_for_each_attr(b, tb[REALTIME_TYPES], rem) {
