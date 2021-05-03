@@ -207,6 +207,40 @@ result_send(uint32_t id, struct blob_attr *a)
 
 static char *stats_request_uuid;
 
+static char *
+comp(char *src, int len, int *rlen)
+{
+	uLongf sourceLen = len;
+	uLongf destLen = compressBound(len);
+	unsigned char *dest = malloc(destLen);
+
+	memset(dest, 0, destLen);
+
+	if (compress(dest, &destLen, (unsigned char *)src, sourceLen) != Z_OK) {
+		printf("compress failed\n");
+		return NULL;
+	}
+	*rlen = destLen;
+	return (char *)dest;
+}
+
+static char *
+b64(char *src, int len)
+{
+	char *dst;
+	int ret;
+
+	if (!src)
+		return NULL;
+	dst = malloc(len * 4);
+	ret = b64_encode(src, len, dst, len * 4);
+	if (ret < 1) {
+		free(dst);
+		return NULL;
+	}
+	return dst;
+}
+
 void
 stats_send(struct blob_attr *a)
 {
@@ -225,36 +259,16 @@ stats_send(struct blob_attr *a)
 	}
 	if (blobmsg_data_len(a) >= 2 * 1024) {
 		char *source = blobmsg_format_json(a, true);
-		uLongf sourceLen = strlen(source) + 1;
-		uLongf destLen = compressBound(sourceLen);
-		unsigned char *dest = malloc(destLen);
-		char *b64 = NULL;
-		int ret = 0;
+		int comp_len;
+		char *compressed = comp(source, strlen(source), &comp_len);
+		char *encoded = b64(compressed, comp_len);
 
-		if (!dest)
-			ret = 1;
-
-		if (!ret && compress(dest, &destLen, (unsigned char *)source, sourceLen) != Z_OK)
-			ret = 1;
-
-		if (!ret)
-			b64 = malloc(destLen * 2);
-		if (!b64)
-			ret = 1;
-		if (!ret) {
-			int len = b64_encode(dest, destLen, b64, destLen * 2);
-			if (len > 0)
-				blobmsg_add_string(&proto, "compress_64", b64);
-			else
-				ret = 1;
-		}
 		if (source)
 			free(source);
-		if (dest)
-			free(dest);
-		if (b64)
-			free(b64);
-		if (ret) {
+		if (encoded) {
+			blobmsg_add_string(&proto, "compress_64", encoded);
+			free(encoded);
+		} else {
 			ULOG_ERR("failed to compress stats");
 			return;
 		}
