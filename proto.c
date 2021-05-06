@@ -241,6 +241,30 @@ b64(char *src, int len)
 	return dst;
 }
 
+static void
+stats_add_request_uuid(struct blob_buf *b)
+{
+	if (!stats_request_uuid)
+		return;
+	blobmsg_add_string(b, "request_uuid", stats_request_uuid);
+	free(stats_request_uuid);
+	stats_request_uuid = NULL;
+}
+
+static char *
+stats_get_string(struct blob_attr *a)
+{
+	struct blob_attr *b;
+	size_t rem;
+
+	blob_buf_init(&result, 0);
+	stats_add_request_uuid(&result);
+	blobmsg_for_each_attr(b, a, rem)
+		blobmsg_add_blob(&result, b);
+
+	return blobmsg_format_json(result.head, true);
+}
+
 void
 stats_send(struct blob_attr *a)
 {
@@ -252,13 +276,8 @@ stats_send(struct blob_attr *a)
 	blobmsg_add_string(&proto, "jsonrpc", "2.0");
 	blobmsg_add_string(&proto, "method", "state");
 	c = blobmsg_open_table(&proto, "params");
-	if (stats_request_uuid) {
-		blobmsg_add_string(&proto, "request_uuid", stats_request_uuid);
-		free(stats_request_uuid);
-		stats_request_uuid = NULL;
-	}
 	if (blobmsg_data_len(a) >= 2 * 1024) {
-		char *source = blobmsg_format_json(a, true);
+		char *source = stats_get_string(a);
 		int comp_len;
 		char *compressed = comp(source, strlen(source), &comp_len);
 		char *encoded = b64(compressed, comp_len);
@@ -273,6 +292,7 @@ stats_send(struct blob_attr *a)
 			return;
 		}
 	} else {
+		stats_add_request_uuid(&proto);
 		blobmsg_for_each_attr(b, a, rem)
 			blobmsg_add_blob(&proto, b);
 	}
