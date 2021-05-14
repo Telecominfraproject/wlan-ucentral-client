@@ -100,58 +100,6 @@ out:
 	ULOG_INFO("config_init latest:%ld active:%ld\n", uuid_latest, uuid_active);
 }
 
-int
-config_verify(struct blob_attr *attr, uint32_t id)
-{
-	static struct blob_attr *tb[__CONFIG_MAX];
-	FILE *fp = NULL;
-	char *cfg;
-	int ret = -1;
-
-	ULOG_DBG("starting verification\n");
-
-	blobmsg_parse(config_policy, __CONFIG_MAX, tb, blobmsg_data(attr), blobmsg_data_len(attr));
-	if (!tb[CONFIG_UUID]) {
-		log_send("received config with no uuid");
-		ULOG_ERR("received config with no uuid\n");
-		return -1;
-	}
-	cfg = blobmsg_format_json(attr, true);
-	if (!cfg) {
-		log_send("failed to format config");
-		ULOG_ERR("failed to format config\n");
-		goto err;
-	}
-	fp = fopen(UCENTRAL_TMP, "w+");
-	if (!fp) {
-		log_send("failed to store config");
-		ULOG_ERR("failed to open %s\n", UCENTRAL_TMP);
-		goto err;
-	}
-	if (fwrite(cfg, strlen(cfg), 1, fp) != 1) {
-		log_send("failed to store config");
-		ULOG_ERR("failed to write %s\n", UCENTRAL_TMP);
-		goto err;
-	}
-	fclose(fp);
-	fp = NULL;
-
-	uuid_latest = (time_t)blobmsg_get_u32(tb[CONFIG_UUID]);
-	ret = 0;
-
-err:
-	if (cfg)
-		free(cfg);
-	if (fp)
-		fclose(fp);
-
-	if (!ret &&
-	    (!uuid_active || uuid_active != uuid_latest))
-		verify_run(id);
-
-	return 0;
-}
-
 void
 config_deinit(void)
 {

@@ -412,7 +412,10 @@ static void
 configure_handle(struct blob_attr **rpc)
 {
 	struct blob_attr *tb[__PARAMS_MAX] = {};
+	char *path = NULL;
 	uint32_t id = 0;
+	char *cfg;
+	FILE *fp;
 
 	blobmsg_parse(params_policy, __PARAMS_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
 		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
@@ -426,10 +429,27 @@ configure_handle(struct blob_attr **rpc)
 		return;
 	}
 
-	if (config_verify(tb[PARAMS_CONFIG], id)) {
-		ULOG_ERR("failed to verify new config\n");
-		configure_reply(1, "failed to verify new config", blobmsg_get_u64(tb[PARAMS_UUID]), id);
+	if (asprintf(&path, "/etc/ucentral/ucentral.cfg.%010lu", (unsigned long int)blobmsg_get_u32(tb[PARAMS_UUID])) < 0) {
+		configure_reply(1, "failed to store the configuration", 0, id);
+		return;
 	}
+
+	fp = fopen(path, "w+");
+	free(path);
+	if (!fp) {
+		configure_reply(1, "failed to store the configuration", 0, id);
+		return;
+	}
+	cfg = blobmsg_format_json(tb[PARAMS_CONFIG], true);
+	if (!cfg) {
+		fclose(fp);
+		configure_reply(1, "failed to store the configuration", 0, id);
+		return;
+	}
+	fprintf(fp, "%s", cfg);
+	free(cfg);
+	fclose(fp);
+	config_init(1, id);
 }
 
 static void
