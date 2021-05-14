@@ -3,13 +3,11 @@
 #include "ucentral.h"
 
 static void
-health_run_cb(time_t uuid)
+health_run_cb(time_t uuid, uint32_t id)
 {
 	ULOG_INFO("running health task\n");
 
-	execlp("/usr/bin/ucode", "/usr/bin/ucode", "-m", "ubus",
-	       "-m", "fs", "-m", "uci", "-i",
-	       "/usr/share/ucentral/health.uc", NULL);
+	execlp("/usr/share/ucentral/health.uc", "/usr/share/ucentral/health.uc", NULL);
 	exit(1);
 }
 
@@ -33,6 +31,7 @@ health_run(uint32_t id, uint32_t immediate)
 		health_task.delay = 0;
 	else
 		health_task.delay = 120;
+	health_task.periodic = client.health_interval;
 	task_stop(&health_task);
 	task_run(&health_task, uuid_active, id);
 }

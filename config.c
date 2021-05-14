@@ -68,10 +68,8 @@ config_init(int apply, uint32_t id)
 	uuid_active = 0;
 
 	snprintf(path, PATH_MAX, "%s/ucentral.cfg.*", UCENTRAL_CONFIG);
-	if (glob(path, 0, NULL, &gl)) {
-		failsafe_init();
+	if (glob(path, 0, NULL, &gl))
 		return;
-	}
 
 	if (!gl.gl_pathc)
 		goto out;

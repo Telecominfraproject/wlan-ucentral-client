@@ -100,12 +100,14 @@ static int ubus_simulate_cb(struct ubus_context *ctx,
 
 enum {
 	RESULT_STATUS,
+	RESULT_UUID,
 	RESULT_ID,
 	__RESULT_MAX,
 };
 
 static const struct blobmsg_policy result_policy[__RESULT_MAX] = {
 	[RESULT_STATUS] = { .name = "status", .type = BLOBMSG_TYPE_TABLE },
+	[RESULT_UUID] = { .name = "uuid", .type = BLOBMSG_TYPE_INT32 },
 	[RESULT_ID] = { .name = "id", .type = BLOBMSG_TYPE_INT32 },
 };
 
@@ -115,12 +117,16 @@ static int ubus_result_cb(struct ubus_context *ctx,
 			  const char *method, struct blob_attr *msg)
 {
 	struct blob_attr *tb[__RESULT_MAX] = {};
+	time_t uuid = 0;
 
 	blobmsg_parse(result_policy, __RESULT_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
 	if (!tb[RESULT_STATUS] || !tb[RESULT_ID])
 		return UBUS_STATUS_INVALID_ARGUMENT;
 
-	result_send(blobmsg_get_u32(tb[RESULT_ID]), tb[RESULT_STATUS]);
+	if (tb[RESULT_UUID])
+		uuid = blobmsg_get_u32(tb[RESULT_UUID]);
+
+	result_send(blobmsg_get_u32(tb[RESULT_ID]), tb[RESULT_STATUS], uuid);
 
 	return UBUS_STATUS_OK;
 }
@@ -182,11 +188,35 @@ static int ubus_event_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+enum {
+	CONFIG_HEALTH,
+	__CONFIG_MAX,
+};
+
+static const struct blobmsg_policy config_policy[__CONFIG_MAX] = {
+	[CONFIG_HEALTH] = { .name = "health", .type = BLOBMSG_TYPE_INT32 },
+};
+
+static int ubus_config_cb(struct ubus_context *ctx,
+			  struct ubus_object *obj,
+			  struct ubus_request_data *req,
+			  const char *method, struct blob_attr *msg)
+{
+	struct blob_attr *tb[__CONFIG_MAX] = {};
+
+	blobmsg_parse(config_policy, __CONFIG_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
+	if (tb[CONFIG_HEALTH])
+		client.health_interval = blobmsg_get_u32(tb[CONFIG_HEALTH]);
+
+	return UBUS_STATUS_OK;
+}
+
 static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD("health", ubus_health_cb, health_policy),
 	UBUS_METHOD("result", ubus_result_cb, result_policy),
 	UBUS_METHOD("log", ubus_log_cb, log_policy),
 	UBUS_METHOD("event", ubus_event_cb, event_policy),
+	UBUS_METHOD("config", ubus_config_cb, config_policy),
 	UBUS_METHOD_NOARG("status", ubus_status_cb),
 	UBUS_METHOD_NOARG("stats", ubus_stats_cb),
 	UBUS_METHOD_NOARG("send", ubus_send_cb),

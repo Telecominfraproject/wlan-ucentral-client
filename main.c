@@ -35,6 +35,7 @@ struct client_config client = {
 	.path = "/",
 	.serial = "00:11:22:33:44:55",
 	.firmware = "v1.0",
+	.health_interval = 600,
 	.debug = 0,
 };
 
@@ -217,6 +218,7 @@ static int print_usage(const char *daemon)
 			"\t-P <port>\n"
 			"\t-d <debug>\n"
 			"\t-f <firmware>\n"
+			"\t-H <health interval>\n"
 			"\t-v <venue>\n", daemon);
 	return -1;
 }
@@ -228,7 +230,7 @@ int main(int argc, char **argv)
 	struct stat st;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "S:s:P:v:f:di")) != -1) {
+	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:di")) != -1) {
 		switch (ch) {
 		case 's':
 			client.server = optarg;
@@ -238,6 +240,9 @@ int main(int argc, char **argv)
 			break;
 		case 'P':
 			client.port = atoi(optarg);
+			break;
+		case 'H':
+			client.health_interval = atoi(optarg);
 			break;
 		case 'd':
 			client.debug = 1;
@@ -289,6 +294,7 @@ int main(int argc, char **argv)
 	ubus_init();
 	periodic.cb = periodic_cb;
         uloop_timeout_set(&periodic, 100);
+	failsafe_init();
 	lws_service(context, 0);
 
 	uloop_run();

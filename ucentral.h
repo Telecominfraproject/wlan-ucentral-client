@@ -35,6 +35,7 @@ struct client_config {
 	const char *firmware;
 	int selfsigned;
 	int debug;
+	int health_interval;
 };
 extern struct client_config client;
 
@@ -43,7 +44,7 @@ struct task {
 	int run_time;
 	int delay;
 	int periodic;
-	void (*run)(time_t uuid);
+	void (*run)(time_t uuid, uint32_t id);
 	void (*complete)(struct task *t, time_t uuid, uint32_t id, int ret);
 	int pending;
 	struct ucentral_task *t;
@@ -69,7 +70,7 @@ void ping_send(void);
 void raw_send(struct blob_attr *a);
 void log_send(char *message);
 void health_send(uint32_t sanity, struct blob_attr *a);
-void result_send(uint32_t id, struct blob_attr *a);
+void result_send(uint32_t id, struct blob_attr *a, uint32_t uuid);
 void result_send_error(uint32_t error, char *text, uint32_t retcode, uint32_t id);
 void stats_send(struct blob_attr *a);
 

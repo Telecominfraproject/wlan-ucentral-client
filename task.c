@@ -37,7 +37,7 @@ static void task_run_cb(struct runqueue *q, struct runqueue_task *task)
 		return;
 	}
 
-	t->task->run(t->uuid);
+	t->task->run(t->uuid, t->id);
 	free(t);
 	exit(1);
 }

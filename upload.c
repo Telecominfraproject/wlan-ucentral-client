@@ -8,7 +8,7 @@ static char *upload_file;
 static char *upload_uri;
 
 static void
-upload_run_cb(time_t uuid)
+upload_run_cb(time_t uuid, uint32_t id)
 {
 	char *file;
 	char *name;

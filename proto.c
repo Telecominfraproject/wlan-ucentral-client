@@ -190,13 +190,14 @@ raw_send(struct blob_attr *a)
 }
 
 void
-result_send(uint32_t id, struct blob_attr *a)
+result_send(uint32_t id, struct blob_attr *a, uint32_t _uuid)
 {
+	time_t uuid = (time_t) _uuid;
 	struct blob_attr *b;
 	void *m, *s;
 	size_t rem;
 
-	m = result_new_blob(id, uuid_active);
+	m = result_new_blob(id, uuid ? uuid : uuid_active);
 	s = blobmsg_open_table(&result, "status");
 	blobmsg_for_each_attr(b, a, rem)
 		blobmsg_add_blob(&result, b);

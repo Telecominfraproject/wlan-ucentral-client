@@ -5,7 +5,7 @@
 static uint32_t blink_running;
 
 static void
-blink_run_cb(time_t uuid)
+blink_run_cb(time_t uuid, uint32_t id)
 {
 	char duration[32];
 

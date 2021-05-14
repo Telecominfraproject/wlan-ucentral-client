@@ -16,7 +16,7 @@ static const struct blobmsg_policy cmd_policy[__CMD_MAX] = {
 };
 
 static void
-cmd_run_cb(time_t uuid)
+cmd_run_cb(time_t uuid, uint32_t _id)
 {
 	char str[128];
 	char id[32];
@@ -24,8 +24,8 @@ cmd_run_cb(time_t uuid)
 	ULOG_INFO("running command task\n");
 
 	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
-	snprintf(id, sizeof(id), "%010ld", uuid);
-	execlp("/usr/libexec/ucentral/ucentral_cmd.sh", "/usr/libexec/ucentral/ucentral_cmd.sh", str, id, NULL);
+	snprintf(id, sizeof(id), "%d", _id);
+	execlp("/usr/share/ucentral/cmd.uc", "/usr/share/ucentral/cmd.uc", str, id, NULL);
 	exit(1);
 }
 
