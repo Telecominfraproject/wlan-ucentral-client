@@ -294,7 +294,6 @@ int main(int argc, char **argv)
 	ubus_init();
 	periodic.cb = periodic_cb;
         uloop_timeout_set(&periodic, 100);
-	failsafe_init();
 	lws_service(context, 0);
 
 	uloop_run();
