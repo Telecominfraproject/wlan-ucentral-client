@@ -675,6 +675,7 @@ proto_handle_blob(void)
 			 !strcmp(method, "upgrade"))
 			action_handle(rpc, method, 1, 10);
 		else if (!strcmp(method, "perform") ||
+			 !strcmp(method, "rtty") ||
 			 !strcmp(method, "wifiscan") ||
 			 !strcmp(method, "trace"))
 			action_handle(rpc, method, 0, 1);
