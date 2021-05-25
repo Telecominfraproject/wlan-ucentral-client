@@ -219,6 +219,7 @@ static int print_usage(const char *daemon)
 			"\t-d <debug>\n"
 			"\t-f <firmware>\n"
 			"\t-H <health interval>\n"
+			"\t-r <boot in recovery mode>\n"
 			"\t-v <venue>\n", daemon);
 	return -1;
 }
@@ -230,7 +231,7 @@ int main(int argc, char **argv)
 	struct stat st;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:di")) != -1) {
+	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:dir")) != -1) {
 		switch (ch) {
 		case 's':
 			client.server = optarg;
@@ -256,6 +257,9 @@ int main(int argc, char **argv)
 			break;
 		case 'i':
 			client.selfsigned = 1;
+			break;
+		case 'r':
+			client.recovery = 1;
 			break;
 		case 'h':
 		default:

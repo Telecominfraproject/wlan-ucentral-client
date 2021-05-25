@@ -114,7 +114,7 @@ connect_send(void)
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_string(&proto, "firmware", client.firmware);
-	blobmsg_add_u64(&proto, "uuid", uuid_active);
+	blobmsg_add_u64(&proto, "uuid", client.recovery ? 0 : uuid_active);
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
 		log_send("failed to load capabilities");
@@ -343,13 +343,19 @@ health_send(uint32_t sanity, struct blob_attr *a)
 void
 crashlog_send(struct blob_attr *a)
 {
-	void *m = proto_new_blob("crashlog");
+	void *m = proto_new_blob(client.recovery ? "recovery" : "crashlog");
 	struct blob_attr *b;
 	void *c;
 	size_t rem;
 
 	blobmsg_add_string(&proto, "serial", client.serial);
-	blobmsg_add_u64(&proto, "uuid", uuid_active);
+	if (client.recovery) {
+		blobmsg_add_string(&proto, "firmware", client.firmware);
+		blobmsg_add_u64(&proto, "uuid", 0);
+		blobmsg_add_u64(&proto, "reboot", 1);
+	} else {
+		blobmsg_add_u64(&proto, "uuid", uuid_active);
+	}
 	c = blobmsg_open_array(&proto, "loglines");
 	blobmsg_for_each_attr(b, a, rem)
 		blobmsg_add_blob(&proto, b);

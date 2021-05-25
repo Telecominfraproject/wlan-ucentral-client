@@ -36,6 +36,7 @@ struct client_config {
 	int selfsigned;
 	int debug;
 	int health_interval;
+	int recovery;
 };
 extern struct client_config client;
 
