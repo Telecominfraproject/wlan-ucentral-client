@@ -164,12 +164,14 @@ static int ubus_rejected_cb(struct ubus_context *ctx,
 enum {
 	REALTIME_EVENT,
 	REALTIME_PAYLOAD,
+	REALTIME_DUMP,
 	__REALTIME_MAX,
 };
 
 static const struct blobmsg_policy event_policy[__REALTIME_MAX] = {
 	[REALTIME_EVENT] = { .name = "event", .type = BLOBMSG_TYPE_STRING },
 	[REALTIME_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
+	[REALTIME_DUMP] = { .name = "dump", .type = BLOBMSG_TYPE_BOOL },
 };
 
 static int ubus_event_cb(struct ubus_context *ctx,
@@ -180,6 +182,13 @@ static int ubus_event_cb(struct ubus_context *ctx,
 	struct blob_attr *tb[__REALTIME_MAX] = {};
 
 	blobmsg_parse(event_policy, __REALTIME_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
+	if (tb[REALTIME_DUMP]) {
+		blob_buf_init(&u, 0);
+		event_dump_all(&u, false);
+		ubus_send_reply(ctx, req, u.head);
+		return UBUS_STATUS_OK;
+	}
+
 	if (!tb[REALTIME_EVENT] || !tb[REALTIME_PAYLOAD])
 		return UBUS_STATUS_INVALID_ARGUMENT;
 

@@ -650,10 +650,10 @@ event_handle(struct blob_attr **rpc)
 		blobmsg_for_each_attr(b, tb[REALTIME_TYPES], rem) {
 			if (blobmsg_type(b) != BLOBMSG_TYPE_STRING)
 				continue;
-			event_dump(&result, blobmsg_get_string(b));
+			event_dump(&result, blobmsg_get_string(b), true);
 		}
 	else
-		event_dump_all(&result);
+		event_dump_all(&result, true);
 
 	blobmsg_close_table(&result, s);
 	blobmsg_close_table(&result, m);

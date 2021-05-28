@@ -108,8 +108,8 @@ void crashlog_init(void);
 void crashlog_send(struct blob_attr *b);
 
 void event_add(char *event, struct blob_attr *payload);
-void event_dump(struct blob_buf *b, char *type);
-void event_dump_all(struct blob_buf *b);
+void event_dump(struct blob_buf *b, char *type, bool delete);
+void event_dump_all(struct blob_buf *b, bool delete);
 
 
 static inline void safe_free(char **mem)

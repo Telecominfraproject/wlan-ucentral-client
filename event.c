@@ -38,7 +38,7 @@ event_add(char *event, struct blob_attr *payload)
 }
 
 void
-event_dump(struct blob_buf *b, char *type)
+event_dump(struct blob_buf *b, char *type, bool delete)
 {
 	void *c = blobmsg_open_array(b, type);
 	struct event *e, *tmp;
@@ -58,6 +58,8 @@ event_dump(struct blob_buf *b, char *type)
 			blobmsg_add_blob(b, a);
 		blobmsg_close_table(b, p);
 		blobmsg_close_array(b, o);
+		if (!delete)
+			continue;
 		list_del(&e->list);
 #ifndef __clang_analyzer__
 		/* clang reports a false positive in event_dump_all()
@@ -72,12 +74,12 @@ event_dump(struct blob_buf *b, char *type)
 }
 
 void
-event_dump_all(struct blob_buf *b)
+event_dump_all(struct blob_buf *b, bool delete)
 {
 	while (!list_empty(&events)) {
 		struct event *e = list_first_entry(&events, struct event, list);
 
-		event_dump(b, e->event);
+		event_dump(b, e->event, delete);
 	}
 }
 
