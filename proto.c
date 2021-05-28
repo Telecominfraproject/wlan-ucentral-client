@@ -114,7 +114,10 @@ connect_send(void)
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_string(&proto, "firmware", client.firmware);
-	blobmsg_add_u64(&proto, "uuid", client.recovery ? 0 : uuid_active);
+	if (client.recovery)
+		blobmsg_add_u64(&proto, "uuid", 0);
+	else
+		blobmsg_add_u64(&proto, "uuid", uuid_active ? uuid_active : 1);
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
 		log_send("failed to load capabilities");
