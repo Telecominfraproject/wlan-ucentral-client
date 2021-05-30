@@ -165,6 +165,7 @@ enum {
 	REALTIME_EVENT,
 	REALTIME_PAYLOAD,
 	REALTIME_DUMP,
+	REALTIME_TYPE,
 	__REALTIME_MAX,
 };
 
@@ -172,6 +173,7 @@ static const struct blobmsg_policy event_policy[__REALTIME_MAX] = {
 	[REALTIME_EVENT] = { .name = "event", .type = BLOBMSG_TYPE_STRING },
 	[REALTIME_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
 	[REALTIME_DUMP] = { .name = "dump", .type = BLOBMSG_TYPE_BOOL },
+	[REALTIME_TYPE] = { .name = "type", .type = BLOBMSG_TYPE_STRING },
 };
 
 static int ubus_event_cb(struct ubus_context *ctx,
@@ -182,9 +184,9 @@ static int ubus_event_cb(struct ubus_context *ctx,
 	struct blob_attr *tb[__REALTIME_MAX] = {};
 
 	blobmsg_parse(event_policy, __REALTIME_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
-	if (tb[REALTIME_DUMP]) {
+	if (tb[REALTIME_DUMP] && tb[REALTIME_TYPE]) {
 		blob_buf_init(&u, 0);
-		event_dump_all(&u, false);
+		event_dump(&u, blobmsg_get_string(tb[REALTIME_TYPE]), false);
 		ubus_send_reply(ctx, req, u.head);
 		return UBUS_STATUS_OK;
 	}

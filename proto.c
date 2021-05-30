@@ -653,7 +653,7 @@ event_handle(struct blob_attr **rpc)
 			event_dump(&result, blobmsg_get_string(b), true);
 		}
 	else
-		event_dump_all(&result, true);
+		event_dump_all(&result);
 
 	blobmsg_close_table(&result, s);
 	blobmsg_close_table(&result, m);

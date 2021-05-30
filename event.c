@@ -74,12 +74,12 @@ event_dump(struct blob_buf *b, char *type, bool delete)
 }
 
 void
-event_dump_all(struct blob_buf *b, bool delete)
+event_dump_all(struct blob_buf *b)
 {
 	while (!list_empty(&events)) {
 		struct event *e = list_first_entry(&events, struct event, list);
 
-		event_dump(b, e->event, delete);
+		event_dump(b, e->event, true);
 	}
 }
 
