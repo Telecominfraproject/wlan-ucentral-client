@@ -35,7 +35,6 @@ cmd_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 	char str[128];
 	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
 	unlink(str);
-	free(t);
 	if (ret)
 		result_send_error(1, "command returned an error code", ret, id);
 }
