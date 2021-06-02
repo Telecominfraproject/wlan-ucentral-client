@@ -90,6 +90,7 @@ void ubus_deinit(void);
 void blink_run(uint32_t duration, uint32_t id);
 
 void health_run(uint32_t id, uint32_t immediate);
+void health_update_interval(uint32_t periodic);
 void health_deinit(void);
 
 void upload_run(struct blob_attr *b);

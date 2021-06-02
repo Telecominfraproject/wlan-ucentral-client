@@ -217,7 +217,9 @@ static int ubus_config_cb(struct ubus_context *ctx,
 
 	blobmsg_parse(config_policy, __CONFIG_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
 	if (tb[CONFIG_HEALTH])
-		client.health_interval = blobmsg_get_u32(tb[CONFIG_HEALTH]);
+		health_update_interval(blobmsg_get_u32(tb[CONFIG_HEALTH]));
+	else
+		return UBUS_STATUS_INVALID_ARGUMENT;
 
 	return UBUS_STATUS_OK;
 }

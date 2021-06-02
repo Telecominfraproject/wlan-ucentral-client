@@ -25,6 +25,12 @@ struct task health_task = {
 };
 
 void
+health_update_interval(uint32_t periodic)
+{
+	health_task.periodic = client.health_interval = periodic;
+}
+
+void
 health_run(uint32_t id, uint32_t immediate)
 {
 	if (immediate)
