@@ -120,7 +120,7 @@ connect_send(void)
 		blobmsg_add_u64(&proto, "uuid", uuid_active ? uuid_active : 1);
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
-		log_send("failed to load capabilities");
+		log_send("failed to load capabilities", LOG_ERR);
 		return;
 	}
 	blobmsg_close_table(&proto, c);
@@ -305,13 +305,13 @@ stats_send(struct blob_attr *a)
 }
 
 void
-log_send(char *message)
+log_send(char *message, int severity)
 {
 	void *m = proto_new_blob("log");
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_string(&proto, "log", message);
-	blobmsg_add_u32(&proto, "severity", LOG_INFO);
+	blobmsg_add_u32(&proto, "severity", severity);
 	blobmsg_close_table(&proto, m);
 	ULOG_ERR("%s\n", message);
 	proto_send_blob();
@@ -670,7 +670,7 @@ proto_handle_blob(void)
 	if (!rpc[JSONRPC_VER] || (!rpc[JSONRPC_METHOD] && !rpc[JSONRPC_ERROR]) ||
 	    (rpc[JSONRPC_METHOD] && !rpc[JSONRPC_PARAMS]) ||
 	    strcmp(blobmsg_get_string(rpc[JSONRPC_VER]), "2.0")) {
-		log_send("received invalid jsonrpc call");
+		log_send("received invalid jsonrpc call", LOG_ERR);
 		return;
 	}
 
@@ -708,7 +708,7 @@ proto_handle(char *cmd)
 
 	blob_buf_init(&proto, 0);
 	if (!blobmsg_add_json_from_string(&proto, cmd)) {
-		log_send("failed to parse command");
+		log_send("failed to parse command", LOG_CRIT);
 		return;
 	}
 	proto_handle_blob();

@@ -38,11 +38,13 @@ static int ubus_send_cb(struct ubus_context *ctx,
 
 enum {
 	LOG_MSG,
+	LOG_SEVERITY,
 	__LOG_MAX,
 };
 
 static const struct blobmsg_policy log_policy[__LOG_MAX] = {
 	[LOG_MSG] = { .name = "msg", .type = BLOBMSG_TYPE_STRING },
+	[LOG_SEVERITY] = { .name = "severity", .type = BLOBMSG_TYPE_INT32 },
 };
 
 static int ubus_log_cb(struct ubus_context *ctx,
@@ -51,12 +53,16 @@ static int ubus_log_cb(struct ubus_context *ctx,
 		       const char *method, struct blob_attr *msg)
 {
 	struct blob_attr *tb[__LOG_MAX] = {};
+	int severity = LOG_INFO;
 
 	blobmsg_parse(log_policy, __LOG_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
 	if (!tb[LOG_MSG])
 		return UBUS_STATUS_INVALID_ARGUMENT;
 
-	log_send(blobmsg_get_string(tb[LOG_MSG]));
+	if (tb[LOG_SEVERITY])
+		severity = blobmsg_get_u32(tb[LOG_SEVERITY]);
+
+	log_send(blobmsg_get_string(tb[LOG_MSG]), severity);
 
 	return UBUS_STATUS_OK;
 }

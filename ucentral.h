@@ -69,7 +69,7 @@ int cmd_run(struct blob_attr *tb, uint32_t id);
 void connect_send(void);
 void ping_send(void);
 void raw_send(struct blob_attr *a);
-void log_send(char *message);
+void log_send(char *message, int severity);
 void health_send(uint32_t sanity, struct blob_attr *a);
 void result_send(uint32_t id, struct blob_attr *a, uint32_t uuid);
 void result_send_error(uint32_t error, char *text, uint32_t retcode, uint32_t id);

@@ -31,9 +31,9 @@ crashlog_init(void)
 		if (tb[CRASH_LOG])
 			crashlog_send(tb[CRASH_LOG]);
 		else
-			log_send("failed to parse the crashlog");
+			log_send("failed to parse the crashlog", LOG_ERR);
 	} else {
-		log_send("found a crashlog that is not valid json");
+		log_send("found a crashlog that is not valid json", LOG_ERR);
 	}
 	blob_buf_free(&crashlog);
 	unlink(CRASHLOG);

@@ -36,10 +36,10 @@ upload_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 
 	if (ret) {
 		ULOG_ERR("ucentral: curl returned (%d)", ret);
-		log_send("failed to upload file");
+		log_send("failed to upload file", LOG_ERR);
 		return;
 	}
-	log_send("upload complete");
+	log_send("upload complete", LOG_INFO);
 }
 
 struct task upload_task = {
@@ -67,7 +67,7 @@ upload_run(struct blob_attr *a)
 	uint32_t id = 0;
 
 	if (upload_pending) {
-		log_send("could not upload file due to another pending upload");
+		log_send("could not upload file due to another pending upload", LOG_WARNING);
 		return;
 	}
 
@@ -75,7 +75,7 @@ upload_run(struct blob_attr *a)
 		      blobmsg_data_len(a));
 
 	if (!tb[UPLOAD_UUID] || !tb[UPLOAD_FILE] || !tb[UPLOAD_URI]) {
-		log_send("invalid upload request");
+		log_send("invalid upload request", LOG_ERR);
 		return;
 	}
 
