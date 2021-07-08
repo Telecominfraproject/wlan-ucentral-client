@@ -8,6 +8,7 @@
 static struct blob_buf proto;
 static struct blob_buf result;
 static struct blob_buf action;
+static char *password;
 
 enum {
 	JSONRPC_VER,
@@ -104,6 +105,31 @@ result_new_blob(uint32_t id, time_t uuid)
 }
 
 void
+password_notify(char *pwd)
+{
+	void *m;
+
+	if (password) {
+		memset(password, 0, strlen(password));
+		free(password);
+		password = NULL;
+	}
+
+	if (!websocket) {
+		password = strdup(pwd);
+		return;
+	}
+
+	m = proto_new_blob("deviceupdate");
+	blobmsg_add_string(&proto, "serial", client.serial);
+	blobmsg_add_string(&proto, "currentPassword", pwd);
+	blobmsg_close_table(&proto, m);
+	ULOG_DBG("xmit password\n");
+	proto_send_blob();
+	memset(pwd, 0, strlen(pwd));
+}
+
+void
 connect_send(void)
 {
 	void *m = proto_new_blob("connect");
@@ -118,6 +144,12 @@ connect_send(void)
 		blobmsg_add_u64(&proto, "uuid", 0);
 	else
 		blobmsg_add_u64(&proto, "uuid", uuid_active ? uuid_active : 1);
+	if (password) {
+		blobmsg_add_string(&proto, "password", password);
+		memset(password, 0, strlen(password));
+		free(password);
+		password = NULL;
+	}
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
 		log_send("failed to load capabilities", LOG_ERR);
