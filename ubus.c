@@ -12,7 +12,11 @@ static int ubus_status_cb(struct ubus_context *ctx,
 			  struct ubus_request_data *req,
 			  const char *method, struct blob_attr *msg)
 {
-	time_t delta = time(NULL) - conn_time;
+	struct timespec tp;
+	time_t delta;
+
+	clock_gettime(CLOCK_MONOTONIC, &tp);
+	delta = tp.tv_sec - conn_time;
 
 	blob_buf_init(&u, 0);
 	blobmsg_add_u32(&u, websocket ? "connected" : "disconnected", delta);

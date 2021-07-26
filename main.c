@@ -39,6 +39,15 @@ struct client_config client = {
 	.debug = 0,
 };
 
+void
+set_conn_time(void)
+{
+	struct timespec tp;
+
+	clock_gettime(CLOCK_MONOTONIC, &tp);
+	conn_time = tp.tv_sec;
+}
+
 static int
 get_reconnect_timeout(void)
 {
@@ -159,7 +168,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		ULOG_INFO("connection established\n");
 		reconnect_timeout = 1;
-		conn_time = time(NULL);
+		set_conn_time();
 		websocket = wsi;
 		connect_send();
 		crashlog_init();
@@ -180,7 +189,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLIENT_CLOSED:
 		ULOG_INFO("connection closed\n");
 		websocket = NULL;
-		conn_time = time(NULL);
+		set_conn_time();
 		vhd->client_wsi = NULL;
 		lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, get_reconnect_timeout());
@@ -287,7 +296,7 @@ int main(int argc, char **argv)
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
 
-	conn_time = time(NULL);
+	set_conn_time();
 	context = lws_create_context(&info);
 	if (!context) {
 		ULOG_INFO("failed to start LWS context\n");

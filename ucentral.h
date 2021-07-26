@@ -112,6 +112,8 @@ void event_add(char *event, struct blob_attr *payload);
 void event_dump(struct blob_buf *b, char *type, bool delete);
 void event_dump_all(struct blob_buf *b);
 
+void set_conn_time(void);
+
 void password_notify(char *pwd);
 
 static inline void safe_free(char **mem)
