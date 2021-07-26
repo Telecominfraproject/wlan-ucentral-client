@@ -9,6 +9,7 @@ static struct blob_buf proto;
 static struct blob_buf result;
 static struct blob_buf action;
 static char *password;
+static bool state_compress = true;
 
 enum {
 	JSONRPC_VER,
@@ -34,6 +35,7 @@ enum {
 	PARAMS_CONFIG,
 	PARAMS_PAYLOAD,
 	PARAMS_REJECTED,
+	PARAMS_COMPRESS,
 	__PARAMS_MAX,
 };
 
@@ -44,6 +46,7 @@ static const struct blobmsg_policy params_policy[__PARAMS_MAX] = {
 	[PARAMS_COMMAND] = { .name = "command", .type = BLOBMSG_TYPE_STRING },
 	[PARAMS_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
 	[PARAMS_REJECTED] = { .name = "rejected", .type = BLOBMSG_TYPE_ARRAY },
+	[PARAMS_COMPRESS] = { .name = "compress", .type = BLOBMSG_TYPE_BOOL },
 };
 
 static void
@@ -312,7 +315,7 @@ stats_send(struct blob_attr *a)
 	blobmsg_add_string(&proto, "jsonrpc", "2.0");
 	blobmsg_add_string(&proto, "method", "state");
 	c = blobmsg_open_table(&proto, "params");
-	if (blobmsg_data_len(a) >= 2 * 1024) {
+	if (state_compress && blobmsg_data_len(a) >= 2 * 1024) {
 		char *source = stats_get_string(a);
 		int comp_len;
 		char *compressed = comp(source, strlen(source), &comp_len);
@@ -470,6 +473,9 @@ configure_handle(struct blob_attr **rpc)
 		configure_reply(1, "invalid parameters", 0, id);
 		return;
 	}
+
+	if (tb[PARAMS_COMPRESS])
+		state_compress = blobmsg_get_bool(tb[PARAMS_COMPRESS]);
 
 	if (asprintf(&path, "/etc/ucentral/ucentral.cfg.%010lu", (unsigned long int)blobmsg_get_u32(tb[PARAMS_UUID])) < 0) {
 		configure_reply(1, "failed to store the configuration", 0, id);
