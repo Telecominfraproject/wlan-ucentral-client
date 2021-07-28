@@ -80,7 +80,7 @@ config_init(int apply, uint32_t id)
 		config_apply(id);
 
 	snprintf(path, PATH_MAX, "%s/ucentral.active", UCENTRAL_CONFIG);
-	if (readlink(path, link, PATH_MAX) < 0) {
+	if (readlink(path, link, PATH_MAX - 1) < 0) {
 		ULOG_INFO("no active symlink found\n");
 		goto out;
 	}
