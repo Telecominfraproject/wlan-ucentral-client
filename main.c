@@ -236,7 +236,7 @@ static int print_usage(const char *daemon)
 int main(int argc, char **argv)
 {
 	struct lws_context_creation_info info;
-	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
+	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_CLIENT;
 	struct stat st;
 	int ch;
 
@@ -295,6 +295,8 @@ int main(int argc, char **argv)
 	info.ssl_ca_filepath = UCENTRAL_CONFIG"cas.pem";
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
+        info.timeout_secs = 60;
+        info.connect_timeout_secs = 30;
 
 	set_conn_time();
 	context = lws_create_context(&info);
