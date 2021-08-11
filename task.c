@@ -91,6 +91,21 @@ task_run(struct task *task, time_t uuid, uint32_t id)
 }
 
 void
+task_apply(struct task *task, time_t uuid, uint32_t id)
+{
+	struct ucentral_task *t = calloc(1, sizeof(*t));
+
+	t->uuid = uuid;
+	t->id = id;
+	t->task = task;
+	t->proc.task.type = &task_type;
+	t->proc.task.run_timeout = task->run_time * 1000;
+	t->proc.task.complete = task_complete;
+	task->t = t;
+	runqueue_task_add(&applyqueue, &t->proc.task, false);
+}
+
+void
 task_stop(struct task *task)
 {
 	if (!task->t)
