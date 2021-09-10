@@ -5,11 +5,14 @@
 
 #include "ucentral.h"
 
+static struct uloop_timeout telemetry;
 static struct blob_buf proto;
 static struct blob_buf result;
 static struct blob_buf action;
 static char *password;
 static bool state_compress = true;
+static int telemetry_interval;
+static struct blob_attr *telemetry_filter;
 
 enum {
 	JSONRPC_VER,
@@ -698,6 +701,85 @@ event_handle(struct blob_attr **rpc)
 	result_send_blob();
 }
 
+
+static void
+telemetry_cb(struct uloop_timeout *telemetry)
+{
+	struct blob_attr *b;
+        void *m, *s;
+	size_t rem;
+
+        m = proto_new_blob("telemetry");
+	blobmsg_add_string(&result, "serial", client.serial);
+	s = blobmsg_open_table(&result, "data");
+	blobmsg_for_each_attr(b, telemetry_filter, rem) {
+		if (blobmsg_type(b) != BLOBMSG_TYPE_STRING)
+			continue;
+		event_dump(&proto, blobmsg_get_string(b), true);
+	}
+	blobmsg_close_table(&result, s);
+	blobmsg_close_table(&result, m);
+	proto_send_blob();
+
+	uloop_timeout_set(telemetry, telemetry_interval * 1000);
+}
+
+static void
+telemetry_handle(struct blob_attr **rpc)
+{
+	enum {
+		TELEMETRY_INTERVAL,
+		TELEMETRY_TYPES,
+		__TELEMETRY_MAX,
+	};
+
+	static const struct blobmsg_policy telemetry_policy[__TELEMETRY_MAX] = {
+		[TELEMETRY_INTERVAL] = { .name = "types", .type = BLOBMSG_TYPE_INT32 },
+		[TELEMETRY_TYPES] = { .name = "types", .type = BLOBMSG_TYPE_ARRAY },
+	};
+
+	struct blob_attr *tb[__TELEMETRY_MAX] = {};
+	uint32_t id = 0;
+	void *m, *s;
+	int err = 0;
+
+	blobmsg_parse(telemetry_policy, __TELEMETRY_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
+		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+
+	if (rpc[JSONRPC_ID])
+		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
+	if (tb[TELEMETRY_INTERVAL])
+		telemetry_interval = blobmsg_get_u32(tb[TELEMETRY_INTERVAL]);
+	else
+		telemetry_interval = 0;
+	if (telemetry_filter) {
+		free(telemetry_filter);
+		telemetry_filter = NULL;
+	}
+	if (tb[TELEMETRY_TYPES])
+		telemetry_filter = blob_memdup(tb[TELEMETRY_TYPES]);
+
+	if (telemetry_interval && !telemetry_filter) {
+		err = 2;
+		telemetry_interval = 0;
+	}
+	if (!telemetry_interval) {
+		telemetry.cb = telemetry_cb;
+		uloop_timeout_set(&telemetry, telemetry_interval * 1000);
+	} else {
+		uloop_timeout_cancel(&telemetry);
+	}
+
+	m = result_new_blob(id, uuid_active);
+	s = blobmsg_open_table(&result, "status");
+	blobmsg_add_u32(&result, "error", err);
+	blobmsg_add_string(&result, "text", err ? "Invalid Arguments": "Success");
+	blobmsg_close_table(&result, s);
+	blobmsg_close_table(&result, m);
+	result_send_blob();
+}
+
 static void
 proto_handle_blob(void)
 {
@@ -732,6 +814,8 @@ proto_handle_blob(void)
 			request_handle(rpc);
 		else if (!strcmp(method, "event"))
 			event_handle(rpc);
+		else if (!strcmp(method, "telemetry"))
+			telemetry_handle(rpc);
 	}
 
 	if (rpc[JSONRPC_ERROR])
