@@ -53,6 +53,7 @@ struct task {
 
 extern struct runqueue runqueue;
 extern struct runqueue applyqueue;
+extern struct runqueue telemetryqueue;
 extern struct lws *websocket;
 extern time_t conn_time;
 
@@ -105,6 +106,7 @@ void failsafe_init(void);
 
 void task_run(struct task *task, time_t uuid, uint32_t id);
 void task_apply(struct task *task, time_t uuid, uint32_t id);
+void task_telemetry(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);
 
 void crashlog_init(void);

@@ -19,6 +19,7 @@ struct lws *websocket = NULL;
 time_t conn_time;
 struct runqueue runqueue;
 struct runqueue applyqueue;
+struct runqueue telemetryqueue;
 
 struct per_vhost_data__minimal {
 	struct lws_context *context;
@@ -285,6 +286,8 @@ int main(int argc, char **argv)
 	runqueue.max_running_tasks = 1;
 	runqueue_init(&applyqueue);
 	applyqueue.max_running_tasks = 1;
+	runqueue_init(&telemetryqueue);
+	telemetryqueue.max_running_tasks = 1;
 	config_init(1, 0);
 
 	lws_set_log_level(logs, NULL);
@@ -320,6 +323,7 @@ int main(int argc, char **argv)
 	proto_free();
 	runqueue_kill(&runqueue);
 	runqueue_kill(&applyqueue);
+	runqueue_kill(&telemetryqueue);
 	lws_context_destroy(context);
 	ubus_deinit();
 	config_deinit();

@@ -5,7 +5,6 @@
 
 #include "ucentral.h"
 
-static struct uloop_timeout telemetry;
 static struct blob_buf proto;
 static struct blob_buf result;
 static struct blob_buf action;
@@ -703,26 +702,39 @@ event_handle(struct blob_attr **rpc)
 
 
 static void
-telemetry_cb(struct uloop_timeout *telemetry)
+telemetry_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
 	struct blob_attr *b;
         void *m, *s;
 	size_t rem;
 
-        m = proto_new_blob("telemetry");
-	blobmsg_add_string(&result, "serial", client.serial);
-	s = blobmsg_open_table(&result, "data");
+	m = proto_new_blob("telemetry");
+	blobmsg_add_string(&proto, "serial", client.serial);
+	s = blobmsg_open_table(&proto, "data");
 	blobmsg_for_each_attr(b, telemetry_filter, rem) {
 		if (blobmsg_type(b) != BLOBMSG_TYPE_STRING)
 			continue;
 		event_dump(&proto, blobmsg_get_string(b), true);
 	}
-	blobmsg_close_table(&result, s);
-	blobmsg_close_table(&result, m);
+	blobmsg_close_table(&proto, s);
+	blobmsg_close_table(&proto, m);
 	proto_send_blob();
-
-	uloop_timeout_set(telemetry, telemetry_interval * 1000);
 }
+
+static void
+telemetry_run_cb(time_t uuid, uint32_t _id)
+{
+	ULOG_INFO("running telemetry task\n");
+
+	execlp("/usr/share/ucentral/telemetry.uc", "/usr/share/ucentral/telemetry.uc", NULL);
+	exit(1);
+}
+
+struct task telemetry_task = {
+	.run_time = 60,
+	.run = telemetry_run_cb,
+	.complete = telemetry_complete_cb,
+};
 
 static void
 telemetry_handle(struct blob_attr **rpc)
@@ -734,7 +746,7 @@ telemetry_handle(struct blob_attr **rpc)
 	};
 
 	static const struct blobmsg_policy telemetry_policy[__TELEMETRY_MAX] = {
-		[TELEMETRY_INTERVAL] = { .name = "types", .type = BLOBMSG_TYPE_INT32 },
+		[TELEMETRY_INTERVAL] = { .name = "interval", .type = BLOBMSG_TYPE_INT32 },
 		[TELEMETRY_TYPES] = { .name = "types", .type = BLOBMSG_TYPE_ARRAY },
 	};
 
@@ -765,10 +777,13 @@ telemetry_handle(struct blob_attr **rpc)
 		telemetry_interval = 0;
 	}
 	if (!telemetry_interval) {
-		telemetry.cb = telemetry_cb;
-		uloop_timeout_set(&telemetry, telemetry_interval * 1000);
+		task_stop(&telemetry_task);
+		unlink("/tmp/ucentral.telemetry");
+	} else if (telemetry_task.periodic) {
+		err = 2;
 	} else {
-		uloop_timeout_cancel(&telemetry);
+		telemetry_task.periodic = telemetry_interval;
+		task_apply(&telemetry_task, uuid_latest, id);
 	}
 
 	m = result_new_blob(id, uuid_active);

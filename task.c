@@ -60,11 +60,11 @@ task_complete(struct runqueue *q, struct runqueue_task *task)
 {
 	struct ucentral_task *t = container_of(task, struct ucentral_task, proc.task);
 	t->task->complete(t->task, t->uuid, t->id, t->ret);
-	t->task->t = NULL;
 	if (t->task->periodic) {
 		t->delay.cb = task_delay;
 		uloop_timeout_set(&t->delay, t->task->periodic * 1000);
 	} else {
+		t->task->t = NULL;
 		free(t);
 	}
 }
@@ -106,10 +106,26 @@ task_apply(struct task *task, time_t uuid, uint32_t id)
 }
 
 void
+task_telemetry(struct task *task, time_t uuid, uint32_t id)
+{
+	struct ucentral_task *t = calloc(1, sizeof(*t));
+
+	t->uuid = uuid;
+	t->id = id;
+	t->task = task;
+	t->proc.task.type = &task_type;
+	t->proc.task.run_timeout = task->run_time * 1000;
+	t->proc.task.complete = task_complete;
+	task->t = t;
+	runqueue_task_add(&telemetryqueue, &t->proc.task, false);
+}
+
+void
 task_stop(struct task *task)
 {
 	if (!task->t)
 		return;
+	task->periodic = 0;
 	uloop_timeout_cancel(&task->t->delay);
 	runqueue_task_kill(&task->t->proc.task);
 	if (task->t) {
