@@ -56,7 +56,7 @@ get_reconnect_timeout(void)
 #define MAX_RECONNECT	(60 * 15)
 	int ret = reconnect_timeout++;
 
-	ret *= 30;
+	ret *= 10;
 	if (ret >= MAX_RECONNECT)
 		ret = MAX_RECONNECT;
 
