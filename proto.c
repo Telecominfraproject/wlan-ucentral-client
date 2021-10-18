@@ -783,7 +783,7 @@ telemetry_handle(struct blob_attr **rpc)
 		err = 2;
 	} else {
 		telemetry_task.periodic = telemetry_interval;
-		task_apply(&telemetry_task, uuid_latest, id);
+		task_telemetry(&telemetry_task, uuid_latest, id);
 	}
 
 	m = result_new_blob(id, uuid_active);
