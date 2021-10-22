@@ -301,7 +301,6 @@ int main(int argc, char **argv)
 	info.ssl_ca_filepath = UCENTRAL_CONFIG"cas.pem";
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
-        info.timeout_secs = 60;
         info.connect_timeout_secs = 30;
 
 	set_conn_time();
