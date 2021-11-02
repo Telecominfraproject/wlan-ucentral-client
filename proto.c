@@ -779,9 +779,11 @@ telemetry_handle(struct blob_attr **rpc)
 	if (!telemetry_interval) {
 		task_stop(&telemetry_task);
 		unlink("/tmp/ucentral.telemetry");
+		system("/etc/init.d/ucentral-event stop");
 	} else if (telemetry_task.periodic) {
 		err = 2;
 	} else {
+		system("/etc/init.d/ucentral-event restart");
 		telemetry_task.periodic = telemetry_interval;
 		task_telemetry(&telemetry_task, uuid_latest, id);
 	}
