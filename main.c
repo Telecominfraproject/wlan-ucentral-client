@@ -85,9 +85,13 @@ sul_connect_attempt(struct lws_sorted_usec_list *sul)
 	vhd->i.protocol = "ucentral-broker";
 	vhd->i.pwsi = &vhd->client_wsi;
 
-	if (!lws_client_connect_via_info(&vhd->i))
+	ULOG_INFO("trying to connect\n");
+	if (!lws_client_connect_via_info(&vhd->i)) {
+		ULOG_INFO("connect failed\n");
 		lws_sul_schedule(vhd->context, 0, &vhd->sul,
-				 sul_connect_attempt, 10 * LWS_US_PER_SEC);
+				 sul_connect_attempt, get_reconnect_timeout());
+	}
+
 }
 
 static unsigned int
