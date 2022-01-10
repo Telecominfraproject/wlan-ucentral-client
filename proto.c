@@ -798,6 +798,21 @@ telemetry_handle(struct blob_attr **rpc)
 }
 
 static void
+ping_handle(struct blob_attr **rpc)
+{
+	uint32_t id = 0;
+	void *m;
+
+	if (rpc[JSONRPC_ID])
+		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
+	m = result_new_blob(id, uuid_active);
+	blobmsg_add_u64(&result, "deviceUTCTime", time(NULL));
+	blobmsg_close_table(&result, m);
+	result_send_blob();
+}
+
+static void
 proto_handle_blob(void)
 {
 	struct blob_attr *rpc[__JSONRPC_MAX] = {};
@@ -816,6 +831,8 @@ proto_handle_blob(void)
 
 		if (!strcmp(method, "configure"))
 			configure_handle(rpc);
+		else if (!strcmp(method, "ping"))
+			ping_handle(rpc);
 		else if (!strcmp(method, "reboot") ||
 			 !strcmp(method, "factory") ||
 			 !strcmp(method, "upgrade"))
