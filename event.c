@@ -61,6 +61,7 @@ event_dump(struct blob_buf *b, char *type, bool delete)
 		if (!delete)
 			continue;
 		list_del(&e->list);
+		count--;
 #ifndef __clang_analyzer__
 		/* clang reports a false positive in event_dump_all()
 		 * warning: Use of memory after it is freed [unix.Malloc]
