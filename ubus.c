@@ -201,6 +201,13 @@ static int ubus_event_cb(struct ubus_context *ctx,
 		return UBUS_STATUS_OK;
 	}
 
+	if (tb[REALTIME_DUMP] && tb[REALTIME_TYPE]) {
+		blob_buf_init(&u, 0);
+		event_dump_all(&u);
+		ubus_send_reply(ctx, req, u.head);
+		return UBUS_STATUS_OK;
+	}
+
 	if (!tb[REALTIME_EVENT] || !tb[REALTIME_PAYLOAD])
 		return UBUS_STATUS_INVALID_ARGUMENT;
 
