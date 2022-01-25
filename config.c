@@ -51,8 +51,10 @@ config_load(const char *path)
 static void
 config_apply(uint32_t id)
 {
-	if (uuid_latest && (uuid_latest == uuid_applied))
+	if (uuid_latest && (uuid_latest == uuid_applied)) {
+		configure_reply(0, "Already applied.", uuid_latest, id);
 		return;
+	}
 	ULOG_INFO("applying cfg:%ld\n", uuid_latest);
 	apply_run(id);
 }
