@@ -14,6 +14,7 @@ static int reconnect_timeout;
 static struct lws_context *context;
 
 static struct uloop_timeout periodic;
+static struct uloop_timeout watchdog;
 static struct uloop_fd sock;
 struct lws *websocket = NULL;
 time_t conn_time;
@@ -224,6 +225,25 @@ periodic_cb(struct uloop_timeout *t)
         uloop_timeout_set(t, 100);
 }
 
+static void
+watchdog_cb(struct uloop_timeout *t)
+{
+	if (!websocket) {
+		struct timespec tp;
+		time_t delta;
+
+		clock_gettime(CLOCK_MONOTONIC, &tp);
+		delta = tp.tv_sec - conn_time;
+
+		if (delta >= 15 * 60 * 1000) {
+			ULOG_ERR("disconnected for more than 15s, restarting the client.");
+			exit(1);
+		}
+	}
+
+	uloop_timeout_set(t, 60 * 1000);
+}
+
 static int print_usage(const char *daemon)
 {
 	fprintf(stderr, "Usage: %s [options]\n"
@@ -318,6 +338,8 @@ int main(int argc, char **argv)
 	ubus_init();
 	periodic.cb = periodic_cb;
         uloop_timeout_set(&periodic, 100);
+	watchdog.cb = watchdog_cb;
+        uloop_timeout_set(&watchdog, 60 * 1000);
 	lws_service(context, 0);
 
 	uloop_run();
