@@ -259,6 +259,7 @@ comp(char *src, int len, int *rlen)
 
 	if (compress(dest, &destLen, (unsigned char *)src, sourceLen) != Z_OK) {
 		printf("compress failed\n");
+		free(dest);
 		return NULL;
 	}
 	*rlen = destLen;
@@ -323,8 +324,8 @@ stats_send(struct blob_attr *a)
 		char *compressed = comp(source, strlen(source), &comp_len);
 		char *encoded = b64(compressed, comp_len);
 
-		if (source)
-			free(source);
+		free(compressed);
+		free(source);
 		if (encoded) {
 			blobmsg_add_string(&proto, "compress_64", encoded);
 			free(encoded);
