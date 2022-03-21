@@ -51,6 +51,47 @@ static const struct blobmsg_policy params_policy[__PARAMS_MAX] = {
 	[PARAMS_COMPRESS] = { .name = "compress", .type = BLOBMSG_TYPE_BOOL },
 };
 
+#if 0
+static void
+send_blob_frag(struct blob_buf *blob)
+{
+#define FRAG_SZ	(128 * 1024)
+	char *msg, fragment[FRAG_SZ + LWS_PRE], *ptr;
+	int len, first = 1;
+	int cnt = 0;
+	FILE *fp = fopen("/dump", "w+");
+	ptr = msg = blobmsg_format_json(blob->head, true);
+	fprintf(fp, "%s", msg);
+	fclose(fp);
+	len = strlen(msg) + 1;
+	ULOG_DBG("TX: %s\n", msg);
+	if (!websocket) {
+		ULOG_ERR("trying to send data while not connected\n");
+		return;
+	}
+
+	do {
+		int opt = LWS_WRITE_TEXT;
+		int frag_len = len >= FRAG_SZ ? FRAG_SZ : len;
+
+		if (first && len > FRAG_SZ)
+			opt |= LWS_WRITE_NO_FIN;
+		else if (!first && len > FRAG_SZ)
+			opt = LWS_WRITE_CONTINUATION | LWS_WRITE_NO_FIN;
+		else if (!first && len <= FRAG_SZ)
+			opt = LWS_WRITE_CONTINUATION;
+
+		memcpy(&fragment[LWS_PRE], ptr, frag_len);
+
+		if (lws_write(websocket, (unsigned char *)&fragment[LWS_PRE], frag_len, opt) < 0)
+			ULOG_ERR("failed to send message\n");
+		len -= FRAG_SZ;
+		ptr += FRAG_SZ;
+		first = 0;
+	} while(len > 0);
+}
+#endif
+
 static void
 send_blob(struct blob_buf *blob)
 {
@@ -320,14 +361,15 @@ stats_send(struct blob_attr *a)
 	c = blobmsg_open_table(&proto, "params");
 	if (state_compress && blobmsg_data_len(a) >= 2 * 1024) {
 		char *source = stats_get_string(a);
-		int comp_len;
-		char *compressed = comp(source, strlen(source), &comp_len);
+		int comp_len, orig_len = strlen(source);
+		char *compressed = comp(source, orig_len, &comp_len);
 		char *encoded = b64(compressed, comp_len);
 
 		free(compressed);
 		free(source);
 		if (encoded) {
 			blobmsg_add_string(&proto, "compress_64", encoded);
+			blobmsg_add_u32(&proto, "compress_sz", orig_len);
 			free(encoded);
 		} else {
 			ULOG_ERR("failed to compress stats");
