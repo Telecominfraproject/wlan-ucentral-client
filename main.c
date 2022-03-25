@@ -38,7 +38,6 @@ struct client_config client = {
 	.path = "/",
 	.serial = "00:11:22:33:44:55",
 	.firmware = "v1.0",
-	.health_interval = 600,
 	.debug = 0,
 };
 
@@ -253,7 +252,6 @@ static int print_usage(const char *daemon)
 			"\t-P <port>\n"
 			"\t-d <debug>\n"
 			"\t-f <firmware>\n"
-			"\t-H <health interval>\n"
 			"\t-r <boot in recovery mode>\n"
 			"\t-v <venue>\n", daemon);
 	return -1;
@@ -276,9 +274,6 @@ int main(int argc, char **argv)
 			break;
 		case 'P':
 			client.port = atoi(optarg);
-			break;
-		case 'H':
-			client.health_interval = atoi(optarg);
 			break;
 		case 'd':
 			client.debug = 1;
@@ -352,7 +347,6 @@ int main(int argc, char **argv)
 	lws_context_destroy(context);
 	ubus_deinit();
 	config_deinit();
-	health_deinit();
 
 	return 0;
 }

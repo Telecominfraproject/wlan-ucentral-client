@@ -631,6 +631,7 @@ request_handle(struct blob_attr **rpc)
 	struct blob_attr *tb[__REQUEST_MAX] = {};
 	char *message, *uuid;
 	uint32_t id = 0;
+	int ret;
 
 	blobmsg_parse(request_policy, __REQUEST_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
 		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
@@ -647,8 +648,6 @@ request_handle(struct blob_attr **rpc)
 	uuid = blobmsg_get_string(tb[REQUEST_UUID]);
 
 	if (!strcmp(message, "state")) {
-		int ret;
-
 		stats_request_uuid = strdup(uuid);
 		ret = system("/etc/init.d/ustats restart");
 		if (ret) {
@@ -657,7 +656,11 @@ request_handle(struct blob_attr **rpc)
 		}
 	} else if (!strcmp(message, "healthcheck")) {
 		health_request_uuid = strdup(uuid);
-		health_run(id, 1);
+		ret = system("/etc/init.d/uhealth restart");
+                if (ret) {
+                        result_send_error(1, "failed to execute uhealth", ret, id);
+                        return;
+                }
 	} else {
 		result_send_error(1, "invalid parameters", 1, id);
 		return;
@@ -822,11 +825,13 @@ telemetry_handle(struct blob_attr **rpc)
 	if (!telemetry_interval) {
 		task_stop(&telemetry_task);
 		unlink("/tmp/ucentral.telemetry");
-		system("/etc/init.d/ucentral-event stop");
+		if (system("/etc/init.d/ucentral-event stop"))
+			ULOG_ERR("failed to stop ucentral-event\n");
 	} else if (telemetry_task.periodic) {
 		err = 2;
 	} else {
-		system("/etc/init.d/ucentral-event restart");
+		if (system("/etc/init.d/ucentral-event restart"))
+			ULOG_ERR("failed to restart ucentral-event\n");
 		telemetry_task.periodic = telemetry_interval;
 		task_telemetry(&telemetry_task, uuid_latest, id);
 	}
