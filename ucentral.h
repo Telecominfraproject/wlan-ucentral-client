@@ -75,6 +75,7 @@ void health_send(uint32_t sanity, struct blob_attr *a);
 void result_send(uint32_t id, struct blob_attr *a, uint32_t uuid);
 void result_send_error(uint32_t error, char *text, uint32_t retcode, uint32_t id);
 void stats_send(struct blob_attr *a);
+void radius_send(struct blob_attr *a);
 
 void proto_handle(char *cmd);
 void proto_handle_simulate(struct blob_attr *a);

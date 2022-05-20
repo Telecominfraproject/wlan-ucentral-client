@@ -271,6 +271,34 @@ raw_send(struct blob_attr *a)
 }
 
 void
+radius_send(struct blob_attr *a)
+{
+	enum {
+		RADIUS_TYPE,
+		RADIUS_DATA,
+		RADIUS_DST,
+		__RADIUS_MAX,
+	};
+
+	static const struct blobmsg_policy radius_policy[__RADIUS_MAX] = {
+		[RADIUS_TYPE] = { .name = "radius", .type = BLOBMSG_TYPE_STRING },
+		[RADIUS_DATA] = { .name = "data", .type = BLOBMSG_TYPE_STRING },
+		[RADIUS_DST] = { .name = "dst", .type = BLOBMSG_TYPE_STRING },
+	};
+
+	struct blob_attr *tb[__PARAMS_MAX] = {};
+
+	blobmsg_parse(radius_policy, __RADIUS_MAX, tb, blob_data(a), blob_len(a));
+	if (!tb[RADIUS_TYPE] || !tb[RADIUS_DATA] || !tb[RADIUS_DST])
+		return;
+	blob_buf_init(&proto, 0);
+	blobmsg_add_string(&proto, "radius", blobmsg_get_string(tb[RADIUS_TYPE]));
+	blobmsg_add_string(&proto, "data", blobmsg_get_string(tb[RADIUS_DATA]));
+	blobmsg_add_string(&proto, "dst", blobmsg_get_string(tb[RADIUS_DST]));
+	proto_send_blob();
+}
+
+void
 result_send(uint32_t id, struct blob_attr *a, uint32_t _uuid)
 {
 	time_t uuid = (time_t) _uuid;

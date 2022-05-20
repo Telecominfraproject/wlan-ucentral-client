@@ -40,6 +40,19 @@ static int ubus_send_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+static int ubus_radius_cb(struct ubus_context *ctx,
+			  struct ubus_object *obj,
+			  struct ubus_request_data *req,
+			  const char *method, struct blob_attr *msg)
+{
+	if (!msg)
+		return UBUS_STATUS_INVALID_ARGUMENT;
+
+	radius_send(msg);
+
+	return UBUS_STATUS_OK;
+}
+
 enum {
 	LOG_MSG,
 	LOG_SEVERITY,
@@ -250,6 +263,7 @@ static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD_NOARG("status", ubus_status_cb),
 	UBUS_METHOD_NOARG("stats", ubus_stats_cb),
 	UBUS_METHOD_NOARG("send", ubus_send_cb),
+	UBUS_METHOD_NOARG("radius", ubus_radius_cb),
 	UBUS_METHOD_NOARG("simulate", ubus_simulate_cb),
 	UBUS_METHOD_NOARG("rejected", ubus_rejected_cb),
 	UBUS_METHOD_NOARG("upload", ubus_upload_cb),
