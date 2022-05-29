@@ -389,7 +389,7 @@ stats_send(struct blob_attr *a)
 	c = blobmsg_open_table(&proto, "params");
 	if (state_compress && blobmsg_data_len(a) >= 2 * 1024) {
 		char *source = stats_get_string(a);
-		int comp_len, orig_len = strlen(source);
+		int comp_len = 0, orig_len = strlen(source);
 		char *compressed = comp(source, orig_len, &comp_len);
 		char *encoded = b64(compressed, comp_len);
 
