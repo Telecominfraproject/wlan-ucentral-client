@@ -19,6 +19,7 @@ enum {
 	JSONRPC_ERROR,
 	JSONRPC_PARAMS,
 	JSONRPC_ID,
+	JSONRPC_RADIUS,
 	__JSONRPC_MAX,
 };
 
@@ -28,6 +29,7 @@ static const struct blobmsg_policy jsonrpc_policy[__JSONRPC_MAX] = {
 	[JSONRPC_ERROR] = { .name = "error", .type = BLOBMSG_TYPE_TABLE },
 	[JSONRPC_PARAMS] = { .name = "params", .type = BLOBMSG_TYPE_TABLE },
 	[JSONRPC_ID] = { .name = "id", .type = BLOBMSG_TYPE_INT32 },
+	[JSONRPC_RADIUS] = { .name = "radius", .type = BLOBMSG_TYPE_STRING },
 };
 
 enum {
@@ -276,25 +278,22 @@ radius_send(struct blob_attr *a)
 	enum {
 		RADIUS_TYPE,
 		RADIUS_DATA,
-		RADIUS_DST,
 		__RADIUS_MAX,
 	};
 
 	static const struct blobmsg_policy radius_policy[__RADIUS_MAX] = {
 		[RADIUS_TYPE] = { .name = "radius", .type = BLOBMSG_TYPE_STRING },
 		[RADIUS_DATA] = { .name = "data", .type = BLOBMSG_TYPE_STRING },
-		[RADIUS_DST] = { .name = "dst", .type = BLOBMSG_TYPE_STRING },
 	};
 
 	struct blob_attr *tb[__PARAMS_MAX] = {};
 
 	blobmsg_parse(radius_policy, __RADIUS_MAX, tb, blob_data(a), blob_len(a));
-	if (!tb[RADIUS_TYPE] || !tb[RADIUS_DATA] || !tb[RADIUS_DST])
+	if (!tb[RADIUS_TYPE] || !tb[RADIUS_DATA])
 		return;
 	blob_buf_init(&proto, 0);
 	blobmsg_add_string(&proto, "radius", blobmsg_get_string(tb[RADIUS_TYPE]));
 	blobmsg_add_string(&proto, "data", blobmsg_get_string(tb[RADIUS_DATA]));
-	blobmsg_add_string(&proto, "dst", blobmsg_get_string(tb[RADIUS_DST]));
 	proto_send_blob();
 }
 
@@ -895,6 +894,11 @@ proto_handle_blob(void)
 	char *method;
 
 	blobmsg_parse(jsonrpc_policy, __JSONRPC_MAX, rpc, blob_data(proto.head), blob_len(proto.head));
+	if (rpc[JSONRPC_RADIUS]) {
+		ubus_forward_radius(&proto);
+		return;
+	}
+
 	if (!rpc[JSONRPC_VER] || (!rpc[JSONRPC_METHOD] && !rpc[JSONRPC_ERROR]) ||
 	    (rpc[JSONRPC_METHOD] && !rpc[JSONRPC_PARAMS]) ||
 	    strcmp(blobmsg_get_string(rpc[JSONRPC_VER]), "2.0")) {

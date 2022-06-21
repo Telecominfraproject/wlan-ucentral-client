@@ -6,6 +6,7 @@
 
 static struct ubus_auto_conn conn;
 static struct blob_buf u;
+static uint32_t radius_proxy;
 
 static int ubus_status_cb(struct ubus_context *ctx,
 			  struct ubus_object *obj,
@@ -254,6 +255,18 @@ static int ubus_password_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+void ubus_forward_radius(struct blob_buf *msg)
+{
+	struct ubus_request async = { };
+
+	if (!radius_proxy) {
+		ULOG_ERR("radius_proxy is not online\n");
+		return;
+	}
+	ubus_invoke_async(&conn.ctx, radius_proxy, "frame", msg->head, &async);
+        ubus_abort_request(&conn.ctx, &async);
+}
+
 static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD("health", ubus_health_cb, health_policy),
 	UBUS_METHOD("result", ubus_result_cb, result_policy),
@@ -279,9 +292,53 @@ struct ubus_object ubus_object = {
 	.n_methods = ARRAY_SIZE(ucentral_methods),
 };
 
+static void
+event_handler_cb(struct ubus_context *ctx,  struct ubus_event_handler *ev,
+             const char *type, struct blob_attr *msg)
+{
+	enum {
+		EVENT_ID,
+		EVENT_PATH,
+		__EVENT_MAX
+	};
+
+	static const struct blobmsg_policy status_policy[__EVENT_MAX] = {
+		[EVENT_ID] = { .name = "id", .type = BLOBMSG_TYPE_INT32 },
+		[EVENT_PATH] = { .name = "path", .type = BLOBMSG_TYPE_STRING },
+	};
+
+	struct blob_attr *tb[__EVENT_MAX];
+	char *path;
+	uint32_t id;
+
+	blobmsg_parse(status_policy, __EVENT_MAX, tb, blob_data(msg), blob_len(msg));
+
+	if (!tb[EVENT_ID] || !tb[EVENT_PATH])
+		return;
+
+	path = blobmsg_get_string(tb[EVENT_PATH]);
+	id = blobmsg_get_u32(tb[EVENT_ID]);
+
+	if (strcmp(path, "radius.proxy"))
+		return;
+	if (!strcmp("ubus.object.remove", type))
+		radius_proxy = 0;
+	else
+		radius_proxy = id;
+
+	ULOG_INFO("%s radius.proxy (%d)\n", radius_proxy ? "add" : "remove", radius_proxy);
+}
+
+static struct ubus_event_handler event_handler = { .cb = event_handler_cb };
+
 static void ubus_connect_handler(struct ubus_context *ctx)
 {
 	ubus_add_object(ctx, &ubus_object);
+	ubus_register_event_handler(ctx, &event_handler, "ubus.object.add");
+	ubus_register_event_handler(ctx, &event_handler, "ubus.object.remove");
+
+	ubus_lookup_id(ctx, "radius.proxy", &radius_proxy);
+
 }
 
 void ubus_init(void)
