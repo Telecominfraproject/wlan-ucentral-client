@@ -877,13 +877,16 @@ static void
 ping_handle(struct blob_attr **rpc)
 {
 	uint32_t id = 0;
-	void *m;
+	void *m, *s;
 
 	if (rpc[JSONRPC_ID])
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
 
 	m = result_new_blob(id, uuid_active);
-	blobmsg_add_u64(&result, "deviceUTCTime", time(NULL));
+	s = blobmsg_open_table(&result, "status");
+	blobmsg_add_u32(&result, "error", 0);
+	blobmsg_add_string(&result, "text", "Success");
+	blobmsg_close_table(&result, s);
 	blobmsg_close_table(&result, m);
 	result_send_blob();
 }
