@@ -573,7 +573,7 @@ configure_handle(struct blob_attr **rpc)
 }
 
 static void
-action_handle(struct blob_attr **rpc, char *command, int reply, int delay)
+action_handle(struct blob_attr **rpc, char *command, int reply, int delay, int admin)
 {
 	struct blob_attr *tb[__PARAMS_MAX] = {};
 	uint32_t id = 0;
@@ -603,7 +603,7 @@ action_handle(struct blob_attr **rpc, char *command, int reply, int delay)
 		blobmsg_close_table(&action, c);
 	}
 
-	if (cmd_run(action.head, id)) {
+	if (cmd_run(action.head, id, admin)) {
 		if (reply)
 			result_send_error(1, "failed to queue command", 1, id);
 		return;
@@ -726,7 +726,7 @@ leds_handle(struct blob_attr **rpc)
 		blink_run(duration, id);
 		return;
 	}
-	action_handle(rpc, "leds", 1, 1);
+	action_handle(rpc, "leds", 1, 1, 1);
 }
 
 static void
@@ -919,13 +919,13 @@ proto_handle_blob(void)
 		else if (!strcmp(method, "reboot") ||
 			 !strcmp(method, "factory") ||
 			 !strcmp(method, "upgrade"))
-			action_handle(rpc, method, 1, 10);
+			action_handle(rpc, method, 1, 10, 1);
 		else if (!strcmp(method, "perform") ||
 			 !strcmp(method, "rtty") ||
 			 !strcmp(method, "wifiscan") ||
 			 !strcmp(method, "script") ||
 			 !strcmp(method, "trace"))
-			action_handle(rpc, method, 0, 1);
+			action_handle(rpc, method, 0, 1, 0);
 		else if (!strcmp(method, "leds"))
 			leds_handle(rpc);
 		else if (!strcmp(method, "request"))

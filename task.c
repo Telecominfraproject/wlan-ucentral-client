@@ -3,6 +3,7 @@
 #include "ucentral.h"
 
 struct ucentral_task {
+	int admin;
 	time_t uuid;
 	uint32_t id;
 	int ret;
@@ -52,7 +53,9 @@ static void
 task_delay(struct uloop_timeout *delay)
 {
 	struct ucentral_task *t = container_of(delay, struct ucentral_task, delay);
-	runqueue_task_add(&runqueue, &t->proc.task, false);
+	struct runqueue *r = t->admin ? &adminqueue : &runqueue;
+
+	runqueue_task_add(r, &t->proc.task, false);
 }
 
 static void
@@ -70,10 +73,12 @@ task_complete(struct runqueue *q, struct runqueue_task *task)
 }
 
 void
-task_run(struct task *task, time_t uuid, uint32_t id)
+task_run(struct task *task, time_t uuid, uint32_t id, int admin)
 {
 	struct ucentral_task *t = calloc(1, sizeof(*t));
+	struct runqueue *r = admin ? &adminqueue : &runqueue;
 
+	t->admin = admin;
 	t->uuid = uuid;
 	t->id = id;
 	t->task = task;
@@ -86,7 +91,7 @@ task_run(struct task *task, time_t uuid, uint32_t id)
 		t->delay.cb = task_delay;
 		uloop_timeout_set(&t->delay, task->delay * 1000);
 	} else {
-		runqueue_task_add(&runqueue, &t->proc.task, false);
+		runqueue_task_add(r, &t->proc.task, false);
 	}
 }
 

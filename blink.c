@@ -38,5 +38,5 @@ blink_run(uint32_t duration, uint32_t id)
 
 	blink_task.run_time = duration + 15;
 	blink_running = 1;
-	task_run(&blink_task, duration, id);
+	task_run(&blink_task, duration, id, 1);
 }
