@@ -78,7 +78,7 @@ sul_connect_attempt(struct lws_sorted_usec_list *sul)
 	vhd->i.path = client.path;
 	vhd->i.host = vhd->i.address;
 	vhd->i.origin = vhd->i.address;
-	vhd->i.ssl_connection = LCCSCF_USE_SSL;
+	vhd->i.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
 	if (client.selfsigned)
 		vhd->i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
 
