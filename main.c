@@ -19,6 +19,7 @@ static struct uloop_timeout watchdog;
 static struct uloop_fd sock;
 struct lws *websocket = NULL;
 time_t conn_time;
+struct runqueue adminqueue;
 struct runqueue runqueue;
 struct runqueue applyqueue;
 struct runqueue telemetryqueue;
@@ -355,6 +356,8 @@ int main(int argc, char **argv)
 	if (!client.debug)
 		ulog_threshold(LOG_INFO);
 
+	runqueue_init(&adminqueue);
+	adminqueue.max_running_tasks = 1;
 	runqueue_init(&runqueue);
 	runqueue.max_running_tasks = 1;
 	runqueue_init(&applyqueue);
@@ -395,6 +398,7 @@ int main(int argc, char **argv)
 
 	uloop_done();
 	proto_free();
+	runqueue_kill(&adminqueue);
 	runqueue_kill(&runqueue);
 	runqueue_kill(&applyqueue);
 	runqueue_kill(&telemetryqueue);

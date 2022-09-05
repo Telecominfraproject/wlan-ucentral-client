@@ -90,5 +90,5 @@ upload_run(struct blob_attr *a)
 	upload_uri = strdup(blobmsg_get_string(tb[UPLOAD_URI]));
 
 	upload_pending = 1;
-	task_run(&upload_task, uuid_latest, id);
+	task_run(&upload_task, uuid_latest, id, 0);
 }

@@ -50,6 +50,7 @@ struct task {
 	struct ucentral_task *t;
 };
 
+extern struct runqueue adminqueue;
 extern struct runqueue runqueue;
 extern struct runqueue applyqueue;
 extern struct runqueue telemetryqueue;
@@ -66,7 +67,7 @@ extern struct blob_buf rejected;
 void config_init(int apply, uint32_t id);
 int config_verify(struct blob_attr *attr, uint32_t id);
 
-int cmd_run(struct blob_attr *tb, uint32_t id);
+int cmd_run(struct blob_attr *tb, uint32_t id, int admin);
 
 void connect_send(void);
 void ping_send(void);
@@ -106,7 +107,7 @@ void verify_run(uint32_t id);
 
 void failsafe_init(void);
 
-void task_run(struct task *task, time_t uuid, uint32_t id);
+void task_run(struct task *task, time_t uuid, uint32_t id, int admin);
 void task_apply(struct task *task, time_t uuid, uint32_t id);
 void task_telemetry(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);

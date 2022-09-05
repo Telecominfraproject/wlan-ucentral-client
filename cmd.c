@@ -40,7 +40,7 @@ cmd_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 }
 
 int
-cmd_run(struct blob_attr *attr, uint32_t id)
+cmd_run(struct blob_attr *attr, uint32_t id, int admin)
 {
 	static struct blob_attr *tb[__CMD_MAX];
 	char *json = NULL;
@@ -80,7 +80,7 @@ cmd_run(struct blob_attr *attr, uint32_t id)
 		task->complete = cmd_complete_cb;
 		fclose(fp);
 		fp = NULL;
-		task_run(task, t, id);
+		task_run(task, t, id, admin);
 		ret = 0;
 	}
 
