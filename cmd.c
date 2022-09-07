@@ -35,7 +35,9 @@ cmd_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 	char str[128];
 	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
 	unlink(str);
-	if (ret)
+	if (t->cancelled)
+		result_send_error(1, "command timed out and was aborted", -1, id);
+	else if (ret)
 		result_send_error(1, "command returned an error code", ret, id);
 }
 

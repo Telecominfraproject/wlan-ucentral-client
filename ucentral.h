@@ -48,6 +48,7 @@ struct task {
 	void (*complete)(struct task *t, time_t uuid, uint32_t id, int ret);
 	int pending;
 	struct ucentral_task *t;
+	int cancelled;
 };
 
 extern struct runqueue adminqueue;

@@ -62,6 +62,7 @@ static void
 task_complete(struct runqueue *q, struct runqueue_task *task)
 {
 	struct ucentral_task *t = container_of(task, struct ucentral_task, proc.task);
+	t->task->cancelled = task->cancelled;
 	t->task->complete(t->task, t->uuid, t->id, t->ret);
 	if (t->task->periodic) {
 		t->delay.cb = task_delay;
