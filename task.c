@@ -85,6 +85,7 @@ task_run(struct task *task, time_t uuid, uint32_t id, int admin)
 	t->task = task;
 	t->proc.task.type = &task_type;
 	t->proc.task.run_timeout = task->run_time * 1000;
+	t->proc.task.cancel_type = SIGKILL;
 	t->proc.task.complete = task_complete;
 	task->t = t;
 
