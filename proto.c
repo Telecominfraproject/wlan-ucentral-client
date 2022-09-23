@@ -926,7 +926,7 @@ proto_handle_blob(void)
 			 !strcmp(method, "trace"))
 			action_handle(rpc, method, 0, 1, 0, 0);
 		else if (!strcmp(method, "wifiscan"))
-			action_handle(rpc, method, 0, 1, 0, 30);
+			action_handle(rpc, method, 0, 1, 0, 120);
 		else if (!strcmp(method, "leds"))
 			leds_handle(rpc);
 		else if (!strcmp(method, "request"))
