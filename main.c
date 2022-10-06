@@ -11,6 +11,7 @@
 #include "ucentral.h"
 
 static int reconnect_timeout;
+static int bad_CN;
 static struct lws_context *context;
 
 static struct uloop_timeout periodic;
@@ -21,6 +22,7 @@ time_t conn_time;
 struct runqueue runqueue;
 struct runqueue applyqueue;
 struct runqueue telemetryqueue;
+int reconnect_time = 0;
 
 struct per_vhost_data__minimal {
 	struct lws_context *context;
@@ -53,16 +55,47 @@ set_conn_time(void)
 static int
 get_reconnect_timeout(void)
 {
-#define MAX_RECONNECT	(60 * 15)
-	int ret = reconnect_timeout++;
+#define BAD_CN_RECONNECT	(60 * 30)
+#define MAX_RECONNECT		(60 * 15)
+	if (bad_CN) {
+		ULOG_INFO("BAD CN - next reconnect in %ds\n", BAD_CN_RECONNECT);
+		reconnect_time = BAD_CN_RECONNECT;
+	} else {
+		reconnect_time = reconnect_timeout++;
+		reconnect_time *= 10;
+		if (reconnect_time >= MAX_RECONNECT)
+			reconnect_time = MAX_RECONNECT;
 
-	ret *= 10;
-	if (ret >= MAX_RECONNECT)
-		ret = MAX_RECONNECT;
+		ULOG_INFO("next reconnect in %ds\n", reconnect_time);
+	}
 
-	ULOG_INFO("next reconnect in %ds\n", ret);
+	return reconnect_time * LWS_US_PER_SEC;
+}
 
-	return ret * LWS_US_PER_SEC;
+static int
+validate_CN(char *CN)
+{
+	int CN_len;
+	int server_len;
+	int ret;
+
+	if (!strcmp(client.server, CN))
+		return 0;
+	if (strncmp(CN, "*.", 2))
+		return -1;
+
+	CN_len = strlen(CN);
+	server_len = strlen(client.server);
+
+	if (server_len < CN_len)
+		return -1;
+
+	ret = strcmp(&CN[1], &client.server[server_len - CN_len + 1]);
+
+	if (!ret)
+		ULOG_INFO("server is using a wildcard certificate\n");
+
+	return ret;
 }
 
 static void
@@ -136,6 +169,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 	int r = 0;
 
 	struct lws_pollargs *in_pollargs = (struct lws_pollargs *)in;
+	union lws_tls_cert_info_results ci;
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
@@ -173,6 +207,23 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		ULOG_INFO("connection established\n");
+		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_VALIDITY_TO, &ci, 0))
+			ULOG_INFO(" Peer Cert Valid to  : %s", ctime(&ci.time));
+
+		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_ISSUER_NAME,
+					    &ci, sizeof(ci.ns.name)))
+			ULOG_INFO(" Peer Cert issuer    : %s\n", ci.ns.name);
+
+		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_COMMON_NAME, &ci, sizeof(ci.ns.name)))
+			ULOG_INFO(" Peer Cert CN        : %s\n", ci.ns.name);
+
+		if (validate_CN(ci.ns.name)) {
+			ULOG_INFO("CN does not match");
+			bad_CN = 1;
+		//	lws_wsi_close(wsi, LWS_TO_KILL_SYNC);
+			return -1;
+		}
+		bad_CN = 0;
 		reconnect_timeout = 1;
 		set_conn_time();
 		websocket = wsi;

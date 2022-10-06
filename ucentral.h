@@ -55,6 +55,7 @@ extern struct runqueue applyqueue;
 extern struct runqueue telemetryqueue;
 extern struct lws *websocket;
 extern time_t conn_time;
+extern int reconnect_time;
 
 extern time_t uuid_latest;
 extern time_t uuid_active;

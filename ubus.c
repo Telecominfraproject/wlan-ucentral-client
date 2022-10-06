@@ -21,6 +21,9 @@ static int ubus_status_cb(struct ubus_context *ctx,
 
 	blob_buf_init(&u, 0);
 	blobmsg_add_u32(&u, websocket ? "connected" : "disconnected", delta);
+	if (!websocket)
+		blobmsg_add_u32(&u, "reconnect", reconnect_time - delta);
+
 	blobmsg_add_u32(&u, "latest", uuid_latest);
 	blobmsg_add_u32(&u, "active", uuid_active);
 	ubus_send_reply(ctx, req, u.head);
