@@ -34,6 +34,8 @@ upload_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
 	upload_pending = 0;
 
+	unlink(upload_file);
+
 	if (ret) {
 		ULOG_ERR("ucentral: curl returned (%d)", ret);
 		log_send("failed to upload file", LOG_ERR);
