@@ -181,6 +181,7 @@ void
 connect_send(void)
 {
 	void *m = proto_new_blob("connect");
+	struct stat statbuf = { };
 	char path[PATH_MAX] = { };
 	void *c;
 
@@ -204,6 +205,8 @@ connect_send(void)
 		return;
 	}
 	blobmsg_close_table(&proto, c);
+	if (!stat("/etc/ucentral/restrictions.json", &statbuf))
+		blobmsg_add_u8(&proto, "restricted", 1);
 	blobmsg_close_table(&proto, m);
 	ULOG_DBG("xmit connect\n");
 	proto_send_blob();
