@@ -207,22 +207,25 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		ULOG_INFO("connection established\n");
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_VALIDITY_TO, &ci, 0))
-			ULOG_INFO(" Peer Cert Valid to  : %s", ctime(&ci.time));
+		if (!client.selfsigned) {
+			if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_VALIDITY_TO, &ci, 0))
+				ULOG_INFO(" Peer Cert Valid to  : %s", ctime(&ci.time));
 
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_ISSUER_NAME,
-					    &ci, sizeof(ci.ns.name)))
-			ULOG_INFO(" Peer Cert issuer    : %s\n", ci.ns.name);
+			if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_ISSUER_NAME,
+						    &ci, sizeof(ci.ns.name)))
+				ULOG_INFO(" Peer Cert issuer    : %s\n", ci.ns.name);
 
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_COMMON_NAME, &ci, sizeof(ci.ns.name)))
-			ULOG_INFO(" Peer Cert CN        : %s\n", ci.ns.name);
+			if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_COMMON_NAME, &ci, sizeof(ci.ns.name)))
+				ULOG_INFO(" Peer Cert CN        : %s\n", ci.ns.name);
 
-		if (validate_CN(ci.ns.name)) {
-			ULOG_INFO("CN does not match");
-			bad_CN = 1;
-		//	lws_wsi_close(wsi, LWS_TO_KILL_SYNC);
-			return -1;
+			if (validate_CN(ci.ns.name)) {
+				ULOG_INFO("CN does not match");
+				bad_CN = 1;
+			//	lws_wsi_close(wsi, LWS_TO_KILL_SYNC);
+				return -1;
+			}
 		}
+
 		bad_CN = 0;
 		reconnect_timeout = 1;
 		set_conn_time();
