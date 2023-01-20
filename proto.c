@@ -792,6 +792,7 @@ telemetry_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 			continue;
 		event_dump(&proto, blobmsg_get_string(b), true);
 	}
+	event_dump(&proto, "event", true);
 	blobmsg_close_table(&proto, s);
 	blobmsg_close_table(&proto, m);
 	proto_send_blob();
@@ -855,13 +856,10 @@ telemetry_handle(struct blob_attr **rpc)
 	if (!telemetry_interval) {
 		task_stop(&telemetry_task);
 		unlink("/tmp/ucentral.telemetry");
-		if (system("/etc/init.d/ucentral-event stop"))
-			ULOG_ERR("failed to stop ucentral-event\n");
 	} else if (telemetry_task.periodic) {
 		err = 2;
 	} else {
-		if (system("/etc/init.d/ucentral-event restart"))
-			ULOG_ERR("failed to restart ucentral-event\n");
+		event_flush();
 		telemetry_task.periodic = telemetry_interval;
 		task_telemetry(&telemetry_task, uuid_latest, id);
 	}

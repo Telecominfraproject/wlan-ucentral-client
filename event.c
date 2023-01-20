@@ -84,3 +84,14 @@ event_dump_all(struct blob_buf *b)
 	}
 }
 
+void
+event_flush(void)
+{
+	struct event *e, *tmp;
+
+	list_for_each_entry_safe(e, tmp, &events, list) {
+		list_del(&e->list);
+		free(e);
+	}
+	count = 0;
+}
