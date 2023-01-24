@@ -276,6 +276,28 @@ raw_send(struct blob_attr *a)
 }
 
 void
+event_send(struct blob_attr *a, time_t time)
+{
+	struct blob_attr *b;
+	void *m, *d, *e, *p;
+	size_t rem;
+
+	m = proto_new_blob("event");
+	blobmsg_add_string(&proto, "serial", client.serial);
+	d = blobmsg_open_table(&proto, "data");
+	e = blobmsg_open_array(&proto, "event");
+	blobmsg_add_u64(&proto, NULL, time);
+	p = blobmsg_open_table(&proto, NULL);
+	blobmsg_for_each_attr(b, a, rem)
+		blobmsg_add_blob(&proto, b);
+	blobmsg_close_table(&proto, p);
+	blobmsg_close_array(&proto, e);
+	blobmsg_close_table(&proto, d);
+	blobmsg_close_table(&proto, m);
+	proto_send_blob();
+}
+
+void
 radius_send(struct blob_attr *a)
 {
 	enum {
@@ -776,6 +798,24 @@ event_handle(struct blob_attr **rpc)
 	result_send_blob();
 }
 
+void
+telemetry_periodic(void)
+{
+        void *m, *s;
+	int count = 0;
+
+	m = proto_new_blob("telemetry");
+	blobmsg_add_string(&proto, "serial", client.serial);
+	blobmsg_add_u8(&proto, "adhoc", 1);
+	s = blobmsg_open_table(&proto, "data");
+	count += event_dump(&proto, "dhcp-snooping", true);
+	count += event_dump(&proto, "wifi-frames", true);
+	count += event_dump(&proto, "event", true);
+	blobmsg_close_table(&proto, s);
+	blobmsg_close_table(&proto, m);
+	if (count)
+		proto_send_blob();
+}
 
 static void
 telemetry_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
@@ -792,7 +832,6 @@ telemetry_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 			continue;
 		event_dump(&proto, blobmsg_get_string(b), true);
 	}
-	event_dump(&proto, "event", true);
 	blobmsg_close_table(&proto, s);
 	blobmsg_close_table(&proto, m);
 	proto_send_blob();
@@ -853,7 +892,9 @@ telemetry_handle(struct blob_attr **rpc)
 		err = 2;
 		telemetry_interval = 0;
 	}
-	if (!telemetry_interval) {
+	if (client.telemetry_interval) {
+		err = 3;
+	} else if (!telemetry_interval) {
 		task_stop(&telemetry_task);
 		unlink("/tmp/ucentral.telemetry");
 	} else if (telemetry_task.periodic) {
@@ -867,7 +908,17 @@ telemetry_handle(struct blob_attr **rpc)
 	m = result_new_blob(id, uuid_active);
 	s = blobmsg_open_table(&result, "status");
 	blobmsg_add_u32(&result, "error", err);
-	blobmsg_add_string(&result, "text", err ? "Invalid Arguments": "Success");
+	switch (err) {
+	case 0:
+		blobmsg_add_string(&result, "text", "Success");
+		break;
+	case 3:
+		blobmsg_add_string(&result, "text", "Periodic telemetry is enabled");
+		break;
+	default:
+		blobmsg_add_string(&result, "text", "Invalid Arguments");
+		break;
+	}
 	blobmsg_close_table(&result, s);
 	blobmsg_close_table(&result, m);
 	result_send_blob();

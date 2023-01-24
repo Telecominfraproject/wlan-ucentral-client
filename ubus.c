@@ -188,47 +188,82 @@ static int ubus_rejected_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
-enum {
-	REALTIME_EVENT,
-	REALTIME_PAYLOAD,
-	REALTIME_DUMP,
-	REALTIME_TYPE,
-	__REALTIME_MAX,
-};
-
-static const struct blobmsg_policy event_policy[__REALTIME_MAX] = {
-	[REALTIME_EVENT] = { .name = "event", .type = BLOBMSG_TYPE_STRING },
-	[REALTIME_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
-	[REALTIME_DUMP] = { .name = "dump", .type = BLOBMSG_TYPE_BOOL },
-	[REALTIME_TYPE] = { .name = "type", .type = BLOBMSG_TYPE_STRING },
-};
-
 static int ubus_event_cb(struct ubus_context *ctx,
-			    struct ubus_object *obj,
-			    struct ubus_request_data *req,
-			    const char *method, struct blob_attr *msg)
+			 struct ubus_object *obj,
+			 struct ubus_request_data *req,
+			 const char *method, struct blob_attr *msg)
 {
-	struct blob_attr *tb[__REALTIME_MAX] = {};
+	event_add(msg);
 
-	blobmsg_parse(event_policy, __REALTIME_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
-	if (tb[REALTIME_DUMP] && tb[REALTIME_TYPE]) {
+	return UBUS_STATUS_OK;
+}
+
+enum {
+	TELEMETRY_EVENT,
+	TELEMETRY_PAYLOAD,
+	TELEMETRY_DUMP,
+	TELEMETRY_TYPE,
+	__TELEMETRY_MAX,
+};
+
+static const struct blobmsg_policy telemetry_policy[__TELEMETRY_MAX] = {
+	[TELEMETRY_EVENT] = { .name = "event", .type = BLOBMSG_TYPE_STRING },
+	[TELEMETRY_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
+	[TELEMETRY_DUMP] = { .name = "dump", .type = BLOBMSG_TYPE_BOOL },
+	[TELEMETRY_TYPE] = { .name = "type", .type = BLOBMSG_TYPE_STRING },
+};
+
+static int ubus_telemetry_cb(struct ubus_context *ctx,
+			     struct ubus_object *obj,
+			     struct ubus_request_data *req,
+			     const char *method, struct blob_attr *msg)
+{
+	struct blob_attr *tb[__TELEMETRY_MAX] = {};
+
+	blobmsg_parse(telemetry_policy, __TELEMETRY_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
+	if (tb[TELEMETRY_DUMP] && tb[TELEMETRY_TYPE]) {
 		blob_buf_init(&u, 0);
-		event_dump(&u, blobmsg_get_string(tb[REALTIME_TYPE]), false);
+		event_dump(&u, blobmsg_get_string(tb[TELEMETRY_TYPE]), false);
 		ubus_send_reply(ctx, req, u.head);
 		return UBUS_STATUS_OK;
 	}
 
-	if (tb[REALTIME_DUMP] && tb[REALTIME_TYPE]) {
+	if (tb[TELEMETRY_DUMP] && tb[TELEMETRY_TYPE]) {
 		blob_buf_init(&u, 0);
 		event_dump_all(&u);
 		ubus_send_reply(ctx, req, u.head);
 		return UBUS_STATUS_OK;
 	}
 
-	if (!tb[REALTIME_EVENT] || !tb[REALTIME_PAYLOAD])
+	if (!tb[TELEMETRY_EVENT] || !tb[TELEMETRY_PAYLOAD])
 		return UBUS_STATUS_INVALID_ARGUMENT;
 
-	event_add(blobmsg_get_string(tb[REALTIME_EVENT]), tb[REALTIME_PAYLOAD]);
+	telemetry_add(blobmsg_get_string(tb[TELEMETRY_EVENT]), tb[TELEMETRY_PAYLOAD]);
+
+	return UBUS_STATUS_OK;
+}
+
+enum {
+	CONFIG_TELEMETRY,
+	__CONFIG_MAX,
+};
+
+static const struct blobmsg_policy config_policy[__CONFIG_MAX] = {
+	[CONFIG_TELEMETRY] = { .name = "telemetry", .type = BLOBMSG_TYPE_INT32 },
+};
+
+static int ubus_config_cb(struct ubus_context *ctx,
+			  struct ubus_object *obj,
+			  struct ubus_request_data *req,
+			  const char *method, struct blob_attr *msg)
+{
+	struct blob_attr *tb[__CONFIG_MAX] = {};
+
+	blobmsg_parse(config_policy, __CONFIG_MAX, tb, blobmsg_data(msg), blobmsg_data_len(msg));
+	if (tb[CONFIG_TELEMETRY])
+		client.telemetry_interval = blobmsg_get_u32(tb[CONFIG_TELEMETRY]);
+
+	event_config();
 
 	return UBUS_STATUS_OK;
 }
@@ -274,8 +309,10 @@ static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD("health", ubus_health_cb, health_policy),
 	UBUS_METHOD("result", ubus_result_cb, result_policy),
 	UBUS_METHOD("log", ubus_log_cb, log_policy),
-	UBUS_METHOD("event", ubus_event_cb, event_policy),
+	UBUS_METHOD("telemetry", ubus_telemetry_cb, telemetry_policy),
+	UBUS_METHOD("config", ubus_config_cb, config_policy),
 	UBUS_METHOD("password", ubus_password_cb, password_policy),
+	UBUS_METHOD_NOARG("event", ubus_event_cb),
 	UBUS_METHOD_NOARG("status", ubus_status_cb),
 	UBUS_METHOD_NOARG("stats", ubus_stats_cb),
 	UBUS_METHOD_NOARG("send", ubus_send_cb),
