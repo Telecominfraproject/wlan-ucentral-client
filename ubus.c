@@ -228,7 +228,7 @@ static int ubus_telemetry_cb(struct ubus_context *ctx,
 		return UBUS_STATUS_OK;
 	}
 
-	if (tb[TELEMETRY_DUMP] && tb[TELEMETRY_TYPE]) {
+	if (tb[TELEMETRY_DUMP]) {
 		blob_buf_init(&u, 0);
 		event_dump_all(&u);
 		ubus_send_reply(ctx, req, u.head);
