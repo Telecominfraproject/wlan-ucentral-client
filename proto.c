@@ -516,6 +516,23 @@ result_send_error(uint32_t error, char *text, uint32_t retcode, uint32_t id)
 	result_send_blob();
 }
 
+void
+venue_broadcast_send(struct blob_attr *payload)
+{
+	struct blob_attr *b;
+	void *m, *d;
+	size_t rem;
+
+	m = proto_new_blob("venue_broadcast");
+	blobmsg_add_string(&proto, "serial", client.serial);
+	blobmsg_add_u64(&proto, "timestamp", time(NULL));
+	d = blobmsg_open_table(&proto, "data");
+	blobmsg_for_each_attr(b, payload, rem)
+		blobmsg_add_blob(&proto, b);
+	blobmsg_close_table(&proto, d);
+	blobmsg_close_table(&proto, m);
+	proto_send_blob();
+}
 
 void
 configure_reply(uint32_t error, char *text, time_t uuid, uint32_t id)

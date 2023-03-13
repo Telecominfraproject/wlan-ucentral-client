@@ -44,6 +44,19 @@ static int ubus_send_cb(struct ubus_context *ctx,
 	return UBUS_STATUS_OK;
 }
 
+static int ubus_venue_broadcast_cb(struct ubus_context *ctx,
+				   struct ubus_object *obj,
+				   struct ubus_request_data *req,
+				   const char *method, struct blob_attr *msg)
+{
+	if (!msg)
+		return UBUS_STATUS_INVALID_ARGUMENT;
+
+	venue_broadcast_send(msg);
+
+	return UBUS_STATUS_OK;
+}
+
 static int ubus_radius_cb(struct ubus_context *ctx,
 			  struct ubus_object *obj,
 			  struct ubus_request_data *req,
@@ -312,6 +325,7 @@ static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD("telemetry", ubus_telemetry_cb, telemetry_policy),
 	UBUS_METHOD("config", ubus_config_cb, config_policy),
 	UBUS_METHOD("password", ubus_password_cb, password_policy),
+	UBUS_METHOD_NOARG("venue_broadcast", ubus_venue_broadcast_cb),
 	UBUS_METHOD_NOARG("event", ubus_event_cb),
 	UBUS_METHOD_NOARG("status", ubus_status_cb),
 	UBUS_METHOD_NOARG("stats", ubus_stats_cb),

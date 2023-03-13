@@ -134,6 +134,7 @@ void set_conn_time(void);
 void password_notify(char *pwd);
 
 void venue_broadcast_handle(struct blob_attr *rpc);
+void venue_broadcast_send(struct blob_attr *payload);
 
 static inline void safe_free(char **mem)
 {
