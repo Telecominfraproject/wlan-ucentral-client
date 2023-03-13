@@ -332,6 +332,14 @@ struct ubus_object ubus_object = {
 	.n_methods = ARRAY_SIZE(ucentral_methods),
 };
 
+void venue_broadcast_handle(struct blob_attr *rpc)
+{
+	if (!ubus_object.has_subscribers)
+		return;
+
+	ubus_notify(&conn.ctx, &ubus_object, "venue", rpc, -1);
+}
+
 static void
 event_handler_cb(struct ubus_context *ctx,  struct ubus_event_handler *ev,
              const char *type, struct blob_attr *msg)

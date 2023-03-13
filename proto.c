@@ -987,6 +987,8 @@ proto_handle_blob(void)
 			event_handle(rpc);
 		else if (!strcmp(method, "telemetry"))
 			telemetry_handle(rpc);
+		else if (!strcmp(method, "venue_broadcast"))
+			venue_broadcast_handle(rpc[JSONRPC_PARAMS]);
 	}
 
 	if (rpc[JSONRPC_ERROR])
