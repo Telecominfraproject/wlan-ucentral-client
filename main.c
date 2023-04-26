@@ -10,6 +10,8 @@
 
 #include "ucentral.h"
 
+#define PUBLIC_IP_FILE "/tmp/public_ip"
+
 static int reconnect_timeout;
 static struct lws_context *context;
 
@@ -177,6 +179,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		reconnect_timeout = 1;
 		set_conn_time();
 		websocket = wsi;
+		remove(PUBLIC_IP_FILE);
 		connect_send();
 		crashlog_init();
 		break;
