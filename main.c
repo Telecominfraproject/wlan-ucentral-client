@@ -35,6 +35,11 @@ struct per_vhost_data__minimal {
 	struct lws *client_wsi;
 };
 
+static const lws_retry_bo_t retry = {
+	.secs_since_valid_ping = 60,
+	.secs_since_valid_hangup = 70,
+};
+
 struct client_config client = {
 	.server = "localhost",
 	.port = 11783,
@@ -379,6 +384,7 @@ int main(int argc, char **argv)
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
         info.connect_timeout_secs = 30;
+	info.retry_and_idle_policy = &retry;
 
 	set_conn_time();
 	context = lws_create_context(&info);
