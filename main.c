@@ -291,17 +291,20 @@ periodic_cb(struct uloop_timeout *t)
 static void
 watchdog_cb(struct uloop_timeout *t)
 {
+	static int disconnected;
+
 	if (!websocket) {
-		struct timespec tp;
-		time_t delta;
+		disconnected++;
 
-		clock_gettime(CLOCK_MONOTONIC, &tp);
-		delta = tp.tv_sec - conn_time;
+		if (disconnected > 5) {
+			FILE *fp = fopen("/tmp/ucentral.restart", "w+");
+			fclose(fp);
 
-		if (delta >= 15 * 60 * 1000) {
-			ULOG_ERR("disconnected for more than 15s, restarting the client.");
+			ULOG_ERR("disconnected for more than 15m, restarting the client.");
 			exit(1);
 		}
+	} else {
+		disconnected = 0;
 	}
 
 	uloop_timeout_set(t, 60 * 1000);
@@ -324,9 +327,11 @@ static int print_usage(const char *daemon)
 int main(int argc, char **argv)
 {
 	struct lws_context_creation_info info;
+	struct stat s = {};
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_CLIENT;
 	struct stat st;
 	int ch;
+	int apply = 1;
 
 	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:dir")) != -1) {
 		switch (ch) {
@@ -355,6 +360,9 @@ int main(int argc, char **argv)
 		case 'r':
 			client.recovery = 1;
 			break;
+		case 'n':
+			apply = 0;
+			break;
 		case 'h':
 		default:
 			return print_usage(*argv);
@@ -365,6 +373,12 @@ int main(int argc, char **argv)
 	if (!client.debug)
 		ulog_threshold(LOG_INFO);
 
+	if (!stat("tmp/ucentral.restart", &s)) {
+		apply = 0;
+		ULOG_INFO("Starting recovery mode\n");
+		unlink("/tmp/ucentral.restart");
+	}
+
 	runqueue_init(&adminqueue);
 	adminqueue.max_running_tasks = 1;
 	runqueue_init(&runqueue);
@@ -373,7 +387,7 @@ int main(int argc, char **argv)
 	applyqueue.max_running_tasks = 1;
 	runqueue_init(&telemetryqueue);
 	telemetryqueue.max_running_tasks = 1;
-	config_init(1, 0);
+	config_init(apply, 0);
 
 	lws_set_log_level(logs, NULL);
 
