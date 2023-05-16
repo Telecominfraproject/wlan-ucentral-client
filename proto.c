@@ -193,6 +193,12 @@ connect_send(void)
 		blobmsg_add_u64(&proto, "uuid", 0);
 	else
 		blobmsg_add_u64(&proto, "uuid", uuid_active ? uuid_active : 1);
+	if (client.boot_cause) {
+		blobmsg_add_string(&proto, "reason", client.boot_cause);
+		client.boot_cause = NULL;
+	} else {
+		blobmsg_add_string(&proto, "reason", "socket");
+	}
 	if (password) {
 		blobmsg_add_string(&proto, "password", password);
 		memset(password, 0, strlen(password));

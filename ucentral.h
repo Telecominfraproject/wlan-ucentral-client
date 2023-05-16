@@ -37,6 +37,7 @@ struct client_config {
 	int debug;
 	int recovery;
 	int telemetry_interval;
+	const char *boot_cause;
 };
 extern struct client_config client;
 

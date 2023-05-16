@@ -333,7 +333,7 @@ int main(int argc, char **argv)
 	int ch;
 	int apply = 1;
 
-	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:dir")) != -1) {
+	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:dirc:")) != -1) {
 		switch (ch) {
 		case 's':
 			client.server = optarg;
@@ -353,6 +353,9 @@ int main(int argc, char **argv)
 			break;
 		case 'S':
 			client.serial = optarg;
+			break;
+		case 'c':
+			client.boot_cause = optarg;
 			break;
 		case 'i':
 			client.selfsigned = 1;
@@ -377,6 +380,7 @@ int main(int argc, char **argv)
 		apply = 0;
 		ULOG_INFO("Starting recovery mode\n");
 		unlink("/tmp/ucentral.restart");
+		client.boot_cause = "recovery";
 	}
 
 	runqueue_init(&adminqueue);
