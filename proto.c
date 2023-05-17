@@ -482,22 +482,18 @@ health_send(uint32_t sanity, struct blob_attr *a)
 }
 
 void
-crashlog_send(struct blob_attr *a)
+rebootlog_send(char *type, struct blob_attr *a)
 {
-	void *m = proto_new_blob(client.recovery ? "recovery" : "crashlog");
+	void *m = proto_new_blob("rebootLog");
 	struct blob_attr *b;
 	void *c;
 	size_t rem;
 
 	blobmsg_add_string(&proto, "serial", client.serial);
-	if (client.recovery) {
-		blobmsg_add_string(&proto, "firmware", client.firmware);
-		blobmsg_add_u64(&proto, "uuid", 0);
-		blobmsg_add_u64(&proto, "reboot", 1);
-	} else {
-		blobmsg_add_u64(&proto, "uuid", uuid_active);
-	}
-	c = blobmsg_open_array(&proto, "loglines");
+	blobmsg_add_u64(&proto, "uuid", uuid_active);
+	blobmsg_add_string(&proto, "type", type);
+	blobmsg_add_u64(&proto, "date", time(NULL));
+	c = blobmsg_open_array(&proto, "info");
 	blobmsg_for_each_attr(b, a, rem)
 		blobmsg_add_blob(&proto, b);
 	blobmsg_close_array(&proto, c);

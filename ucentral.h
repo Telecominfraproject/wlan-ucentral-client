@@ -116,7 +116,8 @@ void task_telemetry(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);
 
 void crashlog_init(void);
-void crashlog_send(struct blob_attr *b);
+void consolelog_init(void);
+void rebootlog_send(char *type, struct blob_attr *b);
 
 int event_dump(struct blob_buf *b, char *type, bool delete);
 void event_dump_all(struct blob_buf *b);

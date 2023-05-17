@@ -178,6 +178,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 
 	struct lws_pollargs *in_pollargs = (struct lws_pollargs *)in;
 	union lws_tls_cert_info_results ci;
+	struct stat s;
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
@@ -241,6 +242,10 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		remove(PUBLIC_IP_FILE);
 		connect_send();
 		crashlog_init();
+		if (!stat("/ucentral.upgrade", &s)) {
+			consolelog_init();
+			unlink("/ucentral.upgrade");
+		}
 		event_backlog();
 		break;
 
@@ -300,7 +305,7 @@ watchdog_cb(struct uloop_timeout *t)
 			FILE *fp = fopen("/tmp/ucentral.restart", "w+");
 			fclose(fp);
 
-			ULOG_ERR("disconnected for more than 15m, restarting the client.");
+			ULOG_ERR("disconnected for more than 5m, restarting the client.");
 			exit(1);
 		}
 	} else {
@@ -376,12 +381,14 @@ int main(int argc, char **argv)
 	if (!client.debug)
 		ulog_threshold(LOG_INFO);
 
-	if (!stat("tmp/ucentral.restart", &s)) {
+	if (!stat("/tmp/ucentral.restart", &s)) {
 		apply = 0;
 		ULOG_INFO("Starting recovery mode\n");
 		unlink("/tmp/ucentral.restart");
 		client.boot_cause = "recovery";
 	}
+	if (!stat("/ucentral.upgrade", &s))
+		client.boot_cause = "upgradefailed";
 
 	runqueue_init(&adminqueue);
 	adminqueue.max_running_tasks = 1;
