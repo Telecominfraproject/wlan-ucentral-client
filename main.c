@@ -389,6 +389,8 @@ int main(int argc, char **argv)
 	}
 	if (!stat("/ucentral.upgrade", &s))
 		client.boot_cause = "upgradefailed";
+	if (!stat("/tmp/crashlog", &s))
+		client.boot_cause = "crashlog";
 
 	runqueue_init(&adminqueue);
 	adminqueue.max_running_tasks = 1;
