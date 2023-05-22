@@ -33,11 +33,14 @@ config_rejected(struct blob_attr *b)
 static time_t
 config_load(const char *path)
 {
+	struct stat s;
+
 	blob_buf_init(&rejected, 0);
 	blob_buf_init(&cfg, 0);
-	if (!blobmsg_add_json_from_file(&cfg, path)) {
+	if (!blobmsg_add_json_from_file(&cfg, path) || !stat("/tmp/bad.config", &s)) {
 		ULOG_ERR("failed to load %s\n", path);
-		return 0;
+		unlink("/tmp/bad.config");
+		return -1;
 	}
 
 	memset(config_tb, 0, sizeof(config_tb));
@@ -66,6 +69,7 @@ config_init(int apply, uint32_t id)
 	char link[PATH_MAX] = { };
 	struct stat s;
 	glob_t gl;
+	int config_id;
 
 	uuid_active = 0;
 
@@ -76,10 +80,15 @@ config_init(int apply, uint32_t id)
 	if (!gl.gl_pathc)
 		goto out;
 
-	uuid_latest = config_load(gl.gl_pathv[gl.gl_pathc - 1]);
-
-	if (apply)
-		config_apply(id);
+	config_id = config_load(gl.gl_pathv[gl.gl_pathc - 1]);
+	if (config_id > 0) {
+		uuid_latest = config_id;
+		if (apply)
+			config_apply(id);
+	} else {
+		configure_reply(2, "failed to load/parse the configuration", 0, uuid_latest);
+		unlink(gl.gl_pathv[gl.gl_pathc - 1]);
+	}
 
 	snprintf(path, PATH_MAX, "%s/ucentral.active", UCENTRAL_CONFIG);
 	if (readlink(path, link, PATH_MAX - 1) < 0) {
