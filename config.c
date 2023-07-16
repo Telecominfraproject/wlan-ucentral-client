@@ -58,7 +58,7 @@ config_apply(uint32_t id)
 		configure_reply(0, "Already applied.", uuid_latest, id);
 		return;
 	}
-	ULOG_INFO("applying cfg:%ld\n", uuid_latest);
+	ULOG_INFO("applying cfg:%" PRIu64 "\n", uuid_latest);
 	apply_run(id);
 }
 
@@ -106,7 +106,7 @@ config_init(int apply, uint32_t id)
 
 out:
 	globfree(&gl);
-	ULOG_INFO("config_init latest:%ld active:%ld\n", uuid_latest, uuid_active);
+	ULOG_INFO("config_init latest:%" PRIu64 " active:%" PRIu64"\n", uuid_latest, uuid_active);
 }
 
 void

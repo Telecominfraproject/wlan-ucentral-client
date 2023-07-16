@@ -12,7 +12,7 @@ apply_run_cb(time_t uuid, uint32_t _id)
 
 	ULOG_INFO("running apply task\n");
 
-	sprintf(str, "/etc/ucentral/ucentral.cfg.%010ld", uuid);
+	sprintf(str, "/etc/ucentral/ucentral.cfg.%010" PRIu64, uuid);
 	sprintf(id, "%d", _id);
 	execlp("/usr/share/ucentral/ucentral.uc", "/usr/share/ucentral/ucentral.uc", str, id, NULL);
 	exit(1);
@@ -29,7 +29,7 @@ apply_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 		return;
 	}
 	uuid_active = uuid_applied = uuid_latest;
-	ULOG_INFO("applied cfg:%ld\n", uuid_latest);
+	ULOG_INFO("applied cfg:%" PRIu64 "\n", uuid_latest);
 	//health_run(id, 0);
 }
 

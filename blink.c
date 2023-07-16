@@ -11,7 +11,7 @@ blink_run_cb(time_t uuid, uint32_t id)
 
 	ULOG_INFO("running blink task\n");
 
-	snprintf(duration, sizeof(duration), "%ld", uuid);
+	snprintf(duration, sizeof(duration), "%" PRIu64, uuid);
 	execlp("/usr/libexec/ucentral/ucentral_led_blink.sh", "/usr/libexec/ucentral/ucentral_led_blink.sh", duration, NULL);
 	exit(1);
 }

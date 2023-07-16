@@ -23,7 +23,7 @@ cmd_run_cb(time_t uuid, uint32_t _id)
 
 	ULOG_INFO("running command task\n");
 
-	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
+	sprintf(str, "/tmp/ucentral.cmd.%010" PRIu64, uuid);
 	snprintf(id, sizeof(id), "%d", _id);
 	execlp("/usr/share/ucentral/cmd.uc", "/usr/share/ucentral/cmd.uc", str, id, NULL);
 	exit(1);
@@ -33,7 +33,7 @@ static void
 cmd_complete_cb(struct task *t, time_t uuid, uint32_t id, int ret)
 {
 	char str[128];
-	sprintf(str, "/tmp/ucentral.cmd.%010ld", uuid);
+	sprintf(str, "/tmp/ucentral.cmd.%010" PRIu64, uuid);
 	unlink(str);
 	if (t->cancelled)
 		result_send_error(1, "command timed out and was aborted", -1, id);
@@ -63,7 +63,7 @@ cmd_run(struct blob_attr *attr, uint32_t id, int admin)
 		goto out;
 	}
 
-	snprintf(path, sizeof(path), "/tmp/ucentral.cmd.%010ld", t);
+	snprintf(path, sizeof(path), "/tmp/ucentral.cmd.%010" PRIu64, t);
 	fp = fopen(path, "w+");
 	if (!fp) {
 		ULOG_ERR("failed to open %s\n", path);
