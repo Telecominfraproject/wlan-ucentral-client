@@ -98,7 +98,7 @@ task_run(struct task *task, time_t uuid, uint32_t id, int admin)
 }
 
 void
-task_apply(struct task *task, time_t uuid, uint32_t id)
+task_config(struct task *task, time_t uuid, uint32_t id)
 {
 	struct ucentral_task *t = calloc(1, sizeof(*t));
 

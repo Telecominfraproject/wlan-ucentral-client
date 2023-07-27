@@ -51,6 +51,7 @@ struct task {
 	int pending;
 	struct ucentral_task *t;
 	int cancelled;
+	char *priv;
 };
 
 extern struct runqueue adminqueue;
@@ -106,12 +107,14 @@ void upload_run(struct blob_attr *b);
 void apply_run(uint32_t id);
 extern int apply_pending;
 
+void ip_collide_run(void);
+
 void verify_run(uint32_t id);
 
 void failsafe_init(void);
 
 void task_run(struct task *task, time_t uuid, uint32_t id, int admin);
-void task_apply(struct task *task, time_t uuid, uint32_t id);
+void task_config(struct task *task, time_t uuid, uint32_t id);
 void task_telemetry(struct task *task, time_t uuid, uint32_t id);
 void task_stop(struct task *task);
 

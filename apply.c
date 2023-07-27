@@ -43,5 +43,5 @@ void
 apply_run(uint32_t id)
 {
 	apply_pending = 1;
-	task_apply(&apply_task, uuid_latest, id);
+	task_config(&apply_task, uuid_latest, id);
 }
