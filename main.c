@@ -111,6 +111,8 @@ sul_connect_attempt(struct lws_sorted_usec_list *sul)
 {
 	struct per_vhost_data__minimal *vhd;
 
+	ubus_set_client_status("offline");
+
 	vhd = lws_container_of(sul, struct per_vhost_data__minimal, sul);
 
 	vhd->i.context = vhd->context;
@@ -215,6 +217,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		return 0;
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
+		ubus_set_client_status("online");
 		ULOG_INFO("connection established\n");
 		if (!client.selfsigned) {
 			if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_VALIDITY_TO, &ci, 0))

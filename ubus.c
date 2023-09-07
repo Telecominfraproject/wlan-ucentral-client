@@ -7,6 +7,7 @@
 static struct ubus_auto_conn conn;
 static struct blob_buf u;
 static uint32_t radius_proxy;
+static uint32_t state;
 
 static int ubus_status_cb(struct ubus_context *ctx,
 			  struct ubus_object *obj,
@@ -328,6 +329,21 @@ void ubus_forward_radius(struct blob_buf *msg)
         ubus_abort_request(&conn.ctx, &async);
 }
 
+void ubus_set_client_status(char *status)
+{
+	struct ubus_request async = { };
+
+	if (!state) {
+		ULOG_ERR("state is not running\n");
+		return;
+	}
+	blob_buf_init(&u, 0);
+	blobmsg_add_string(&u, "state", status);
+
+	ubus_invoke_async(&conn.ctx, state, "set", u.head, &async);
+        ubus_abort_request(&conn.ctx, &async);
+}
+
 static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD("health", ubus_health_cb, health_policy),
 	UBUS_METHOD("result", ubus_result_cb, result_policy),
@@ -392,14 +408,16 @@ event_handler_cb(struct ubus_context *ctx,  struct ubus_event_handler *ev,
 	path = blobmsg_get_string(tb[EVENT_PATH]);
 	id = blobmsg_get_u32(tb[EVENT_ID]);
 
-	if (strcmp(path, "radius.proxy"))
-		return;
 	if (!strcmp("ubus.object.remove", type))
-		radius_proxy = 0;
-	else
+		id = 0;
+	if (!strcmp(path, "radius.proxy"))
 		radius_proxy = id;
+	else if (!strcmp(path, "state"))
+		state = id;
+	else
+		return;
 
-	ULOG_INFO("%s radius.proxy (%d)\n", radius_proxy ? "add" : "remove", radius_proxy);
+	ULOG_INFO("%s %s (%d)\n", id ? "add" : "remove", path, id);
 }
 
 static struct ubus_event_handler event_handler = { .cb = event_handler_cb };
@@ -411,7 +429,7 @@ static void ubus_connect_handler(struct ubus_context *ctx)
 	ubus_register_event_handler(ctx, &event_handler, "ubus.object.remove");
 
 	ubus_lookup_id(ctx, "radius.proxy", &radius_proxy);
-
+	ubus_lookup_id(ctx, "state", &state);
 }
 
 void ubus_init(void)
