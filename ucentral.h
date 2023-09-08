@@ -96,8 +96,7 @@ void ubus_init(void);
 void ubus_deinit(void);
 void ubus_forward_radius(struct blob_buf *msg);
 void ubus_set_client_status(char *status);
-
-void blink_run(uint32_t duration, uint32_t id);
+void ubus_blink_leds(int duration);
 
 void health_run(uint32_t id, uint32_t immediate);
 void health_update_interval(uint32_t periodic);

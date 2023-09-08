@@ -344,6 +344,22 @@ void ubus_set_client_status(char *status)
         ubus_abort_request(&conn.ctx, &async);
 }
 
+void ubus_blink_leds(int duration)
+{
+	struct ubus_request async = { };
+
+	if (!state) {
+		ULOG_ERR("state is not running\n");
+		return;
+	}
+	blob_buf_init(&u, 0);
+	blobmsg_add_string(&u, "state", "blink");
+	blobmsg_add_u32(&u, "duration", duration);
+
+	ubus_invoke_async(&conn.ctx, state, "set", u.head, &async);
+        ubus_abort_request(&conn.ctx, &async);
+}
+
 static const struct ubus_method ucentral_methods[] = {
 	UBUS_METHOD("health", ubus_health_cb, health_policy),
 	UBUS_METHOD("result", ubus_result_cb, result_policy),

@@ -767,7 +767,8 @@ leds_handle(struct blob_attr **rpc)
 		duration = blobmsg_get_u32(tb[LED_DURATION]);
 
 	if (!strcmp(blobmsg_get_string(tb[LED_PATTERN]), "blink")) {
-		blink_run(duration, id);
+		result_send_error(0, "success", 0, id);
+		ubus_blink_leds(duration);
 		return;
 	}
 	action_handle(rpc, "leds", 1, 1, 1, 0);
