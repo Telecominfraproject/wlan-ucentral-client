@@ -994,6 +994,7 @@ proto_handle_blob(void)
 		else if (!strcmp(method, "perform") ||
 			 !strcmp(method, "rtty") ||
 			 !strcmp(method, "script") ||
+			 !strcmp(method, "rrm") ||
 			 !strcmp(method, "trace"))
 			action_handle(rpc, method, 0, 1, 0, 0);
 		else if (!strcmp(method, "wifiscan"))
