@@ -962,6 +962,53 @@ ping_handle(struct blob_attr **rpc)
 	result_send_blob();
 }
 
+/*static void
+transfer_handle(struct blob_attr **rpc)
+{
+	enum {
+		TRANSFER_SERVER,
+		TRANSFER_PORT,
+		__TRANSFER_MAX,
+	};
+
+	static const struct blobmsg_policy transfer_policy[__TRANSFER_MAX] = {
+		[TRANSFER_SERVER] = { .name = "server", .type = BLOBMSG_TYPE_STRING },
+		[TRANSFER_PORT] = { .name = "port", .type = BLOBMSG_TYPE_INT32 },
+	};
+
+	struct blob_attr *tb[__TRANSFER_MAX] = {};
+	uint32_t id = 0;
+	char *gateway;
+	FILE *fp;
+
+	blobmsg_parse(transfer_policy, __TRANSFER_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
+		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+
+	if (rpc[JSONRPC_ID])
+		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
+	if (!tb[TRANSFER_SERVER] || !tb[TRANSFER_PORT]) {
+		result_send_error(1, "invalid parameters", 1, id);
+		return;
+	}
+
+	fp = fopen("/etc/ucentral/gateway.json", "w+");
+	if (!fp) {
+		configure_reply(1, "failed to store the new gateway", 0, id);
+		return;
+	}
+	gateway = blobmsg_format_json(rpc[JSONRPC_PARAMS], true);
+	if (!gateway) {
+		fclose(fp);
+		configure_reply(1, "failed to store the new gateway", 0, id);
+		return;
+	}
+	fprintf(fp, "%s", gateway);
+	free(gateway);
+	fclose(fp);
+	result_send_error(0, "success", 0, id);
+}*/
+
 static void
 proto_handle_blob(void)
 {
@@ -989,6 +1036,7 @@ proto_handle_blob(void)
 		else if (!strcmp(method, "ping"))
 			ping_handle(rpc);
 		else if (!strcmp(method, "reboot") ||
+			 !strcmp(method, "transfer") ||
 			 !strcmp(method, "factory") ||
 			 !strcmp(method, "upgrade"))
 			action_handle(rpc, method, 1, 10, 1, 0);
