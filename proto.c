@@ -1042,6 +1042,7 @@ proto_handle_blob(void)
 			action_handle(rpc, method, 1, 10, 1, 0);
 		else if (!strcmp(method, "perform") ||
 			 !strcmp(method, "rtty") ||
+			 !strcmp(method, "certupdate") ||
 			 !strcmp(method, "script") ||
 			 !strcmp(method, "rrm") ||
 			 !strcmp(method, "trace"))
