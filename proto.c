@@ -205,6 +205,14 @@ connect_send(void)
 		free(password);
 		password = NULL;
 	}
+	if (!stat("/etc/ucentral/ucentral.defaults", &statbuf)) {
+		c = blobmsg_open_table(&proto, "defaults");
+		if (!blobmsg_add_json_from_file(&proto, "/etc/ucentral/ucentral.defaults")) {
+			log_send("failed to load defaults", LOG_ERR);
+			return;
+		}
+		blobmsg_close_table(&proto, c);
+	}
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
 		log_send("failed to load capabilities", LOG_ERR);
