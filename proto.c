@@ -656,8 +656,7 @@ action_handle(struct blob_attr **rpc, char *command, int reply, int delay, int a
 	}
 
 	if (cmd_run(action.head, id, admin)) {
-		if (reply)
-			result_send_error(1, "failed to queue command", 1, id);
+		result_send_error(1, "failed to queue command", 1, id);
 		return;
 	}
 	if (reply)
@@ -1045,9 +1044,10 @@ proto_handle_blob(void)
 			ping_handle(rpc);
 		else if (!strcmp(method, "reboot") ||
 			 !strcmp(method, "transfer") ||
-			 !strcmp(method, "factory") ||
-			 !strcmp(method, "upgrade"))
+			 !strcmp(method, "factory"))
 			action_handle(rpc, method, 1, 10, 1, 0);
+		else if (!strcmp(method, "upgrade"))
+			action_handle(rpc, method, 0, 10, 1, 0);
 		else if (!strcmp(method, "perform") ||
 			 !strcmp(method, "rtty") ||
 			 !strcmp(method, "certupdate") ||
