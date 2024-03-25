@@ -141,6 +141,8 @@ void password_notify(char *pwd);
 void venue_broadcast_handle(struct blob_attr *rpc);
 void venue_broadcast_send(struct blob_attr *payload);
 
+void version_init(struct blob_buf *b);
+
 static inline void safe_free(char **mem)
 {
 	if (!*mem)

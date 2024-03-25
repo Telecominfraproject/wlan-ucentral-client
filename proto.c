@@ -189,6 +189,7 @@ connect_send(void)
 
 	blobmsg_add_string(&proto, "serial", client.serial);
 	blobmsg_add_string(&proto, "firmware", client.firmware);
+	version_init(&proto);
 	if (client.recovery)
 		blobmsg_add_u64(&proto, "uuid", 0);
 	else
