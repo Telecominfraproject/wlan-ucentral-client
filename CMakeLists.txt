@@ -11,7 +11,7 @@ ADD_DEFINITIONS(-Os -std=gnu99 -g3 -Wmissing-declarations -Wno-unused-parameter)
 
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 
-SET(SOURCES main.c config.c proto.c ubus.c task.c cmd.c apply.c upload.c rebootlog.c event.c collide.c version.c)
+SET(SOURCES main.c config.c proto.c ubus.c task.c cmd.c apply.c upload.c rebootlog.c event.c collide.c)
 
 FIND_LIBRARY(ubus NAMES ubus)
 FIND_LIBRARY(blobmsg_json NAMES blobmsg_json)
