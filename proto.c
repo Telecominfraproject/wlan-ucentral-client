@@ -40,6 +40,8 @@ enum {
 	PARAMS_PAYLOAD,
 	PARAMS_REJECTED,
 	PARAMS_COMPRESS,
+	PARAMS_COMPRESS_64,
+	PARAMS_COMPRESS_SZ,
 	__PARAMS_MAX,
 };
 
@@ -51,6 +53,8 @@ static const struct blobmsg_policy params_policy[__PARAMS_MAX] = {
 	[PARAMS_PAYLOAD] = { .name = "payload", .type = BLOBMSG_TYPE_TABLE },
 	[PARAMS_REJECTED] = { .name = "rejected", .type = BLOBMSG_TYPE_ARRAY },
 	[PARAMS_COMPRESS] = { .name = "compress", .type = BLOBMSG_TYPE_BOOL },
+	[PARAMS_COMPRESS_64] = {.name = "compress_64", .type = BLOBMSG_TYPE_STRING},
+	[PARAMS_COMPRESS_SZ] = {.name = "compress_sz", .type = BLOBMSG_TYPE_INT32},
 };
 
 #if 0
@@ -374,6 +378,21 @@ comp(char *src, int len, int *rlen)
 }
 
 static char *
+decomp(char *src, int len)
+{
+        uLong ucompSize = len + 1;
+        uLong compSize = compressBound(ucompSize);
+        char *dest = malloc(ucompSize);
+
+        if (uncompress((Bytef *)dest, &ucompSize, (Bytef *)src, compSize) != Z_OK)
+        {
+                free(dest);
+                return NULL;
+        };
+        return (char *)dest;
+}
+
+static char *
 b64(char *src, int len)
 {
 	char *dst;
@@ -388,6 +407,51 @@ b64(char *src, int len)
 		return NULL;
 	}
 	return dst;
+}
+
+static char *
+decode_b64(char *src, int len)
+{
+        char *dst;
+        int ret;
+
+        if (!src)
+                return NULL;
+        dst = malloc(len);
+        ret = b64_decode(src, dst, len);
+        if (ret < 1)
+        {
+                free(dst);
+                return NULL;
+        }
+        return dst;
+}
+
+static void
+decode_and_inflate(struct blob_attr **encoded_param, struct blob_attr *ret[__JSONRPC_MAX]) {
+        int compress_sz = blobmsg_get_u32(encoded_param[PARAMS_COMPRESS_SZ]);
+        char *cp64 = blobmsg_get_string(encoded_param[PARAMS_COMPRESS_64]);
+        char *cp = decode_b64(cp64, compress_sz);
+        if (cp == NULL) {
+                ULOG_ERR("base64 decode failed for message\n");
+                ret = NULL;
+                return;
+        }
+        char *params = decomp(cp, compress_sz);
+        if (params == NULL) {
+                ULOG_ERR("failed to uncompress message\n");
+                ret = NULL;
+                return;
+	}
+
+        static struct blob_buf pbuf;
+        blob_buf_init(&pbuf, 0);
+        void *c;
+        c = blobmsg_open_table(&pbuf, "params");
+        blobmsg_add_json_from_string(&pbuf, params);
+        free(params);
+        blobmsg_close_table(&pbuf, c);
+        blobmsg_parse(jsonrpc_policy, __JSONRPC_MAX, ret, blob_data(pbuf.head), blob_len(pbuf.head));
 }
 
 static void
@@ -591,6 +655,22 @@ configure_handle(struct blob_attr **rpc)
 
 	if (rpc[JSONRPC_ID])
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
+        if (tb[PARAMS_COMPRESS_64] && tb[PARAMS_COMPRESS_SZ])
+        {
+                ULOG_INFO("configuration message is compressed, decode and uncompress\n");
+                struct blob_attr *tb2[__JSONRPC_MAX] = {};
+		decode_and_inflate(tb,tb2);
+		if (!tb2[JSONRPC_PARAMS])
+                {
+                        ULOG_ERR("after decode and uncompress, configure message is missing parameters\n");
+                        configure_reply(1, "after decode and uncompress, configure message is missing parameters", 0, id);
+                        return;
+                }
+
+                blobmsg_parse(params_policy, __PARAMS_MAX, tb, blobmsg_data(tb2[JSONRPC_PARAMS]),
+                                          blobmsg_data_len(tb2[JSONRPC_PARAMS]));
+        }
 
 	if (!tb[PARAMS_UUID] || !tb[PARAMS_SERIAL] || !tb[PARAMS_CONFIG]) {
 		ULOG_ERR("configure message is missing parameters\n");
