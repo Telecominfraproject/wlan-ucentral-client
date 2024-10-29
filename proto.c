@@ -832,16 +832,18 @@ leds_handle(struct blob_attr **rpc)
 	enum {
 		LED_DURATION,
 		LED_PATTERN,
+		LED_ENDLESS,
 		__LED_MAX,
 	};
 
 	static const struct blobmsg_policy led_policy[__LED_MAX] = {
 		[LED_DURATION] = { .name = "duration", .type = BLOBMSG_TYPE_INT32 },
 		[LED_PATTERN] = { .name = "pattern", .type = BLOBMSG_TYPE_STRING },
+		[LED_ENDLESS] = { .name = "endless", .type = BLOBMSG_TYPE_BOOL },
 	};
 
 	struct blob_attr *tb[__LED_MAX] = {};
-	uint32_t duration = 60;
+	uint32_t duration = 0;
 	uint32_t id = 0;
 
 	blobmsg_parse(led_policy, __LED_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
@@ -852,12 +854,16 @@ leds_handle(struct blob_attr **rpc)
 
 	if (tb[LED_DURATION])
 		duration = blobmsg_get_u32(tb[LED_DURATION]);
+	
+	if (tb[LED_ENDLESS] && blobmsg_get_bool(tb[LED_ENDLESS]))
+		duration = 0xffff;
 
 	if (!strcmp(blobmsg_get_string(tb[LED_PATTERN]), "blink")) {
 		result_send_error(0, "success", 0, id);
 		ubus_blink_leds(duration);
 		return;
 	}
+	ubus_blink_leds(0);
 	action_handle(rpc, "leds", 1, 1, 1, 0);
 }
 
