@@ -217,6 +217,13 @@ connect_send(void)
 		}
 		blobmsg_close_table(&proto, c);
 	}
+	if (!stat("/tmp/udhcpc-vsi.json", &statbuf)) {
+		c = blobmsg_open_table(&proto, "udhcpc-vsi");
+		if (!blobmsg_add_json_from_file(&proto, "/tmp/udhcpc-vsi.json")) {
+			log_send("failed to load udhcpc-vsi", LOG_WARNING);
+		}
+		blobmsg_close_table(&proto, c);
+	}
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
 		log_send("failed to load capabilities", LOG_ERR);
