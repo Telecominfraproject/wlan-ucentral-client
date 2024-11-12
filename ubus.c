@@ -333,6 +333,11 @@ void ubus_set_client_status(char *status)
 {
 	struct ubus_request async = { };
 
+	if (!strcmp(status, "online"))
+		system("ubus call cloud online");
+	else if (!strcmp(status, "offline"))
+		system("ubus call cloud offline");
+
 	if (!state) {
 		ULOG_ERR("state is not running\n");
 		return;
