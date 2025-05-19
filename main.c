@@ -49,6 +49,7 @@ struct client_config client = {
 	.serial = "00:11:22:33:44:55",
 	.firmware = "v1.0",
 	.debug = 0,
+	.hostname_validate = 0,
 };
 
 void
@@ -219,7 +220,7 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		ubus_set_client_status("online");
 		ULOG_INFO("connection established\n");
-		if (!client.selfsigned) {
+		if (!client.selfsigned && client.hostname_validate) {
 			if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_VALIDITY_TO, &ci, 0))
 				ULOG_INFO(" Peer Cert Valid to  : %s", ctime(&ci.time));
 
@@ -327,6 +328,7 @@ static int print_usage(const char *daemon)
 			"\t-P <port>\n"
 			"\t-d <debug>\n"
 			"\t-f <firmware>\n"
+			"\t-h <hostname validation>\n"
 			"\t-r <boot in recovery mode>\n"
 			"\t-v <venue>\n", daemon);
 	return -1;
@@ -341,7 +343,7 @@ int main(int argc, char **argv)
 	int ch;
 	int apply = 1;
 
-	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:dirc:")) != -1) {
+	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:dirc:h")) != -1) {
 		switch (ch) {
 		case 's':
 			client.server = optarg;
@@ -375,6 +377,8 @@ int main(int argc, char **argv)
 			apply = 0;
 			break;
 		case 'h':
+			client.hostname_validate = 1;
+			break;
 		default:
 			return print_usage(*argv);
 		}

@@ -38,6 +38,7 @@ struct client_config {
 	int recovery;
 	int telemetry_interval;
 	const char *boot_cause;
+	int hostname_validate;
 };
 extern struct client_config client;
 
