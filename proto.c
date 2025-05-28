@@ -225,12 +225,10 @@ connect_send(void)
 		blobmsg_close_table(&proto, c);
 	}
 	if (!stat("/etc/ucentral/packages.json", &statbuf)) {
-		c = blobmsg_open_table(&proto, "packages");
 		if (!blobmsg_add_json_from_file(&proto, "/etc/ucentral/packages.json")) {
 			log_send("failed to load packages", LOG_ERR);
 			return;
 		}
-		blobmsg_close_table(&proto, c);
 	}
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
