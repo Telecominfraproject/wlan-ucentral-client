@@ -224,6 +224,14 @@ connect_send(void)
 		}
 		blobmsg_close_table(&proto, c);
 	}
+	if (!stat("/etc/ucentral/packages.json", &statbuf)) {
+		c = blobmsg_open_table(&proto, "packages");
+		if (!blobmsg_add_json_from_file(&proto, "/etc/ucentral/packages.json")) {
+			log_send("failed to load packages", LOG_ERR);
+			return;
+		}
+		blobmsg_close_table(&proto, c);
+	}
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
 		log_send("failed to load capabilities", LOG_ERR);
@@ -1062,6 +1070,48 @@ ping_handle(struct blob_attr **rpc)
 	result_send_blob();
 }
 
+static void
+package_install_handle(struct blob_attr **rpc)
+{
+	enum {
+		PACKAGE_NAME,
+		PACKAGE_URL,
+		__PACKAGE_MAX,
+	};
+
+	static const struct blobmsg_policy package_policy[__PACKAGE_MAX] = {
+		[PACKAGE_NAME] = { .name = "name", .type = BLOBMSG_TYPE_STRING },
+		[PACKAGE_URL] = { .name = "url", .type = BLOBMSG_TYPE_STRING },
+	};
+
+	struct blob_attr *tb[__PACKAGE_MAX] = {};
+	struct blob_attr *cur;
+	uint32_t id = 0;
+	int rem;
+
+	if (rpc[JSONRPC_ID])
+		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
+	if (!blobmsg_check_array(rpc[JSONRPC_PARAMS], BLOBMSG_TYPE_TABLE)) {
+		result_send_error(1, "invalid parameters: params must be an array of objects", 1, id);
+		return;
+	}
+
+	blobmsg_for_each_attr(cur, rpc[JSONRPC_PARAMS], rem) {
+		if (blobmsg_type(cur) != BLOBMSG_TYPE_TABLE) {
+			result_send_error(1, "invalid parameters: array elements must be objects", 1, id);
+			return;
+		}
+
+		blobmsg_parse(package_policy, __PACKAGE_MAX, tb, blobmsg_data(cur), blobmsg_data_len(cur));
+
+		if (!tb[PACKAGE_NAME] || !tb[PACKAGE_URL]) {
+			result_send_error(1, "invalid parameters: missing name or url", 1, id);
+			return;
+		}
+	}
+}
+
 /*static void
 transfer_handle(struct blob_attr **rpc)
 {
@@ -1162,6 +1212,8 @@ proto_handle_blob(void)
 			telemetry_handle(rpc);
 		else if (!strcmp(method, "venue_broadcast"))
 			venue_broadcast_handle(rpc[JSONRPC_PARAMS]);
+		else if (!strcmp(method, "package_install"))
+			package_install_handle(rpc);
 	}
 
 	if (rpc[JSONRPC_ERROR])
