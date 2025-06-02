@@ -224,8 +224,8 @@ connect_send(void)
 		}
 		blobmsg_close_table(&proto, c);
 	}
-	if (!stat("/etc/ucentral/packages.json", &statbuf)) {
-		if (!blobmsg_add_json_from_file(&proto, "/etc/ucentral/packages.json")) {
+	if (!stat("/tmp/ucentral/packages.json", &statbuf)) {
+		if (!blobmsg_add_json_from_file(&proto, "/tmp/ucentral/packages.json")) {
 			log_send("failed to load packages", LOG_ERR);
 			return;
 		}
