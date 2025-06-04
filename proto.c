@@ -1132,7 +1132,7 @@ package_install_handle(struct blob_attr **rpc)
 			return;
 		}
 
-		ULOG_DBG("package: %s %s\n", tb[PACKAGE_NAME], tb[PACKAGE_URL]);
+		ULOG_DBG("package: %s %s\n", &tb[PACKAGE_NAME], &tb[PACKAGE_URL]);
 	}
 }
 
