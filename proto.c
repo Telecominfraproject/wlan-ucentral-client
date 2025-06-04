@@ -1116,10 +1116,11 @@ package_install_handle(struct blob_attr **rpc)
 		return;
 	}
 
-	if (tb_root[ROOT_OP] != "install" && tb_root[ROOT_OP] != "delete") {
-		result_send_error(1, "invalid parameters: unrecognized operation", 1, id);
-		return;
-	}
+	const char *op = blobmsg_get_string(tb_root[ROOT_OP]);
+    if (strcmp(op, "install") != 0 && strcmp(op, "delete") != 0) {
+        result_send_error(1, "invalid parameters: unrecognized operation", 1, id);
+        return;
+    }
 
 	if (!tb_root[ROOT_PACKAGES]) {
 		result_send_error(1, "invalid parameters: missing packages array", 1, id);
@@ -1144,10 +1145,19 @@ package_install_handle(struct blob_attr **rpc)
 			return;
 		}
 
-		if (tb_root[ROOT_OP] != "install" && !tb[PACKAGE_URL]) {
-			result_send_error(1, "invalid parameters: missing package url for installation", 1, id);
-			return;
-		}
+		if (strcmp(op, "install") == 0) {
+            if (!tb[PACKAGE_URL]) {
+                result_send_error(1, "invalid parameters: missing package url for installation", 1, id);
+                return;
+            }
+
+            // Validate URL scheme (http or https)
+            const char *url = blobmsg_get_string(tb[PACKAGE_URL]);
+            if (!url || (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0)) {
+                result_send_error(1, "invalid parameters: package url must start with http:// or https://", 1, id);
+                return;
+            }
+        }
 
 		ULOG_DBG("Processing package: name=%s, url=%s\n", blobmsg_get_string(tb[PACKAGE_NAME]), blobmsg_get_string(tb[PACKAGE_URL]));
 	}
