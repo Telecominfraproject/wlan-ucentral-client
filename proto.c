@@ -1179,6 +1179,8 @@ proto_handle_blob(void)
 	if (rpc[JSONRPC_METHOD]) {
 		method = blobmsg_get_string(rpc[JSONRPC_METHOD]);
 
+		ULOG_DBG("RX: %s\n", method);
+
 		if (!strcmp(method, "configure"))
 			configure_handle(rpc);
 		else if (!strcmp(method, "ping"))
@@ -1210,7 +1212,7 @@ proto_handle_blob(void)
 			telemetry_handle(rpc);
 		else if (!strcmp(method, "venue_broadcast"))
 			venue_broadcast_handle(rpc[JSONRPC_PARAMS]);
-		else if (!strcmp(method, "package_install"))
+		else if (!strcmp(method, "pkginst"))
 			package_install_handle(rpc);
 	}
 
