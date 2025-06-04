@@ -1078,6 +1078,7 @@ package_install_handle(struct blob_attr **rpc)
 	};
 
 	enum {
+		ROOT_OP,
 		ROOT_PACKAGES,
 		ROOT_SERIAL,
 		__ROOT_MAX,
@@ -1089,6 +1090,7 @@ package_install_handle(struct blob_attr **rpc)
 	};
 
 	static const struct blobmsg_policy root_policy[__ROOT_MAX] = {
+		[ROOT_OP] = { .name = "op", .type = BLOBMSG_TYPE_STRING },
 		[ROOT_PACKAGES] = { .name = "packages", .type = BLOBMSG_TYPE_ARRAY },
 		[ROOT_SERIAL] = { .name = "serial", .type = BLOBMSG_TYPE_STRING },
 	};
@@ -1109,6 +1111,16 @@ package_install_handle(struct blob_attr **rpc)
 
 	blobmsg_parse(root_policy, __ROOT_MAX, tb_root, blobmsg_data(rpc[JSONRPC_PARAMS]), blobmsg_data_len(rpc[JSONRPC_PARAMS]));
 
+	if (!tb_root[ROOT_OP]) {
+		result_send_error(1, "invalid parameters: missing operation", 1, id);
+		return;
+	}
+
+	if (tb_root[ROOT_OP] != "install" && tb_root[ROOT_OP] != "delete") {
+		result_send_error(1, "invalid parameters: unrecognized operation", 1, id);
+		return;
+	}
+
 	if (!tb_root[ROOT_PACKAGES]) {
 		result_send_error(1, "invalid parameters: missing packages array", 1, id);
 		return;
@@ -1127,8 +1139,13 @@ package_install_handle(struct blob_attr **rpc)
 
 		blobmsg_parse(package_policy, __PACKAGE_MAX, tb, blobmsg_data(cur), blobmsg_data_len(cur));
 
-		if (!tb[PACKAGE_NAME] || !tb[PACKAGE_URL]) {
-			result_send_error(1, "invalid parameters: missing name or url", 1, id);
+		if (!tb[PACKAGE_NAME]) {
+			result_send_error(1, "invalid parameters: missing package name", 1, id);
+			return;
+		}
+
+		if (tb_root[ROOT_OP] != "install" && !tb[PACKAGE_URL]) {
+			result_send_error(1, "invalid parameters: missing package url for installation", 1, id);
 			return;
 		}
 
