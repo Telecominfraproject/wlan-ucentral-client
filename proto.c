@@ -1134,6 +1134,15 @@ package_install_handle(struct blob_attr **rpc)
 
 		ULOG_DBG("Processing package: name=%s, url=%s\n", blobmsg_get_string(tb[PACKAGE_NAME]), blobmsg_get_string(tb[PACKAGE_URL]));
 	}
+
+	void *m, *s;
+	m = result_new_blob(id, uuid_active);
+	s = blobmsg_open_table(&result, "status");
+	blobmsg_add_u32(&result, "error", 0);
+	blobmsg_add_string(&result, "text", "Success");
+	blobmsg_close_table(&result, s);
+	blobmsg_close_table(&result, m);
+	result_send_blob();
 }
 
 /*static void
