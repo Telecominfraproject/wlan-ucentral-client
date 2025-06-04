@@ -1077,11 +1077,23 @@ package_install_handle(struct blob_attr **rpc)
 		__PACKAGE_MAX,
 	};
 
+	enum {
+		ROOT_PACKAGES,
+		ROOT_SERIAL,
+		__ROOT_MAX,
+	};
+
 	static const struct blobmsg_policy package_policy[__PACKAGE_MAX] = {
 		[PACKAGE_NAME] = { .name = "name", .type = BLOBMSG_TYPE_STRING },
 		[PACKAGE_URL] = { .name = "url", .type = BLOBMSG_TYPE_STRING },
 	};
 
+	static const struct blobmsg_policy root_policy[__ROOT_MAX] = {
+		[ROOT_PACKAGES] = { .name = "packages", .type = BLOBMSG_TYPE_ARRAY },
+		[ROOT_SERIAL] = { .name = "serial", .type = BLOBMSG_TYPE_STRING },
+	};
+
+	struct blob_attr *tb_root[__ROOT_MAX] = {};
 	struct blob_attr *tb[__PACKAGE_MAX] = {};
 	struct blob_attr *cur;
 	uint32_t id = 0;
@@ -1090,14 +1102,26 @@ package_install_handle(struct blob_attr **rpc)
 	if (rpc[JSONRPC_ID])
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
 
-	if (!blobmsg_check_array(rpc[JSONRPC_PARAMS], BLOBMSG_TYPE_TABLE)) {
-		result_send_error(1, "invalid parameters: params must be an array of objects", 1, id);
+	if (!rpc[JSONRPC_PARAMS]) {
+		result_send_error(1, "invalid parameters: params missing", 1, id);
 		return;
 	}
 
-	blobmsg_for_each_attr(cur, rpc[JSONRPC_PARAMS], rem) {
+	blobmsg_parse(root_policy, __ROOT_MAX, tb_root, blobmsg_data(rpc[JSONRPC_PARAMS]), blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+
+	if (!tb_root[ROOT_PACKAGES]) {
+		result_send_error(1, "invalid parameters: missing packages array", 1, id);
+		return;
+	}
+
+	if (blobmsg_type(tb_root[ROOT_PACKAGES]) != BLOBMSG_TYPE_ARRAY) {
+		result_send_error(1, "invalid parameters: packages must be an array", 1, id);
+		return;
+	}
+
+	blobmsg_for_each_attr(cur, tb_root[ROOT_PACKAGES], rem) {
 		if (blobmsg_type(cur) != BLOBMSG_TYPE_TABLE) {
-			result_send_error(1, "invalid parameters: array elements must be objects", 1, id);
+			result_send_error(1, "invalid parameters: package array elements must be objects", 1, id);
 			return;
 		}
 
@@ -1107,6 +1131,8 @@ package_install_handle(struct blob_attr **rpc)
 			result_send_error(1, "invalid parameters: missing name or url", 1, id);
 			return;
 		}
+
+		ULOG_DBG("package: %s %s\n", tb[PACKAGE_NAME], tb[PACKAGE_URL]);
 	}
 }
 
