@@ -4,7 +4,6 @@
 #include <stdio.h>
 
 #include "ucentral.h"
-#include "package.h"
 
 static struct blob_buf proto;
 static struct blob_buf result;
