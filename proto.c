@@ -1174,15 +1174,6 @@ package_install_handle(struct blob_attr **rpc)
 
 	void *m, *s, *p;
 	m = result_new_blob(id, uuid_active);
-	s = blobmsg_open_table(&result, "status");
-	blobmsg_add_u32(&result, "error", 0);
-	blobmsg_add_string(&result, "text", "Executed");
-	blobmsg_close_table(&result, s);
-	blobmsg_close_table(&result, m);
-	result_send_blob();
-
-
-	m = result_new_blob(id, uuid_active);
     s = blobmsg_open_table(&result, "status");
     p = blobmsg_open_array(&result, "packages");
 
