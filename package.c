@@ -1,5 +1,5 @@
 #include <curl/curl.h>
-
+#include <ctype.h>
 #include "ucentral.h"
 
 int escapePackageName(const char *name) {
@@ -76,7 +76,7 @@ const char *installPackage(const char *pkgName, const char *pkgURL) {
         if (ret == 255) {
             return "Failed to install package.";
         }
-        return "Unknown error."
+        return "Unknown error.";
     }
 
     deleteIPK(pkgName);
