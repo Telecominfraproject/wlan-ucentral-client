@@ -64,7 +64,7 @@ const char *installPackage(const char *pkgName, const char *pkgURL) {
     int ret = downloadIPK(pkgName, pkgURL);
     ULOG_DBG("Function downloadIPK returned with status %d", ret);
     if (ret) {
-        if (ret == 8) {
+        if (ret == (8 << 8)) {
             return "Failed to download.";
         }
         return "Unknown error.";
@@ -73,21 +73,21 @@ const char *installPackage(const char *pkgName, const char *pkgURL) {
     ret = installIPK(pkgName);
     ULOG_DBG("Function installIPK returned with status %d", ret);
     if (ret) {
-        if (ret == 255) {
+        if (ret == (255 << 8)) {
             return "Failed to install package.";
         }
         return "Unknown error.";
     }
 
     deleteIPK(pkgName);
-    return "Success.";
+    return "Success";
 }
 
 const char *removePackage(const char *pkgName) {
     int ret = checkPKG(pkgName);
     ULOG_DBG("Function checkPKG returned with status %d", ret);
     if (ret) {
-        if (ret == 1) {
+        if (ret == (1 << 8)) {
             return "No such package.";
         }
         return "Unknown error.";
@@ -96,11 +96,11 @@ const char *removePackage(const char *pkgName) {
     ret = removePKG(pkgName);
     ULOG_DBG("Function removePKG returned with status %d", ret);
     if (ret) {
-        if (ret == 255) {
+        if (ret == (255 << 8)) {
             return "Failed to remove package, please check dependency before proceding.";
         }
         return "Unknown error.";
     }
 
-    return "Success.";
+    return "Success";
 }
