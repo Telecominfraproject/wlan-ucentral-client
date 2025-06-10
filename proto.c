@@ -1148,6 +1148,11 @@ package_install_handle(struct blob_attr **rpc)
 			return;
 		}
 
+		// if (escapePackageName(tb[PACKAGE_NAME]) == -1) {
+		// 	result_send_error(1, "invalid parameters: invalid package name", 1, id);
+		// 	return;
+		// }
+
 		if (strcmp(op, "install") == 0) {
             if (!tb[PACKAGE_URL]) {
                 result_send_error(1, "invalid parameters: missing package url for installation", 1, id);

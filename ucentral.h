@@ -144,6 +144,7 @@ void venue_broadcast_send(struct blob_attr *payload);
 
 const char *installPackage(const char *pkgName, const char *pkgURL);
 const char *removePackage(const char *pkgName);
+int escapePackageName(const char *name);
 int downloadIPK(const char *name, const char *url);
 int installIPK(const char *name);
 int deleteIPK(const char *name);
