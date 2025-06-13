@@ -414,10 +414,10 @@ int main(int argc, char **argv)
 	memset(&info, 0, sizeof info);
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-	info.client_ssl_cert_filepath = UCENTRAL_CONFIG"cert.pem";
+	info.client_ssl_cert_filepath = UCENTRAL_CONFIG"operational.pem";
 	if (!stat(UCENTRAL_CONFIG"key.pem", &st))
 		info.client_ssl_private_key_filepath = UCENTRAL_CONFIG"key.pem";
-	info.ssl_ca_filepath = UCENTRAL_CONFIG"cas.pem";
+	info.ssl_ca_filepath = UCENTRAL_CONFIG"operational.ca";
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
         info.connect_timeout_secs = 30;
