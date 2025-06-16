@@ -1,5 +1,6 @@
-#include <curl/curl.h>
 #include <ctype.h>
+#include <curl/curl.h>
+
 #include "ucentral.h"
 
 int escapePackageName(const char *name) {
@@ -31,7 +32,7 @@ int downloadIPK(const char *name, const char *url)
 int installIPK(const char *name)
 {
     char command[512];
-    snprintf(command, sizeof(command), "opkg install -i /tmp/cpm/%s.ipk", name);
+    snprintf(command, sizeof(command), "opkg install -i /tmp/cpm/%s.ipk --force-reinstall", name);
 
     return system(command);
 }
