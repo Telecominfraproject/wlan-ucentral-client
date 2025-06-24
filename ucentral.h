@@ -142,6 +142,16 @@ void password_notify(char *pwd);
 void venue_broadcast_handle(struct blob_attr *rpc);
 void venue_broadcast_send(struct blob_attr *payload);
 
+const char *installPackage(const char *pkgName, const char *pkgURL);
+const char *removePackage(const char *pkgName);
+int escapePackageName(const char *name);
+int validatePackageURL(const char *url);
+int downloadIPK(const char *name, const char *url);
+int installIPK(const char *name);
+int deleteIPK(const char *name);
+int checkPKG(const char *name);
+int removePKG(const char *name);
+
 static inline void safe_free(char **mem)
 {
 	if (!*mem)
