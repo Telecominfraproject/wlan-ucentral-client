@@ -1120,10 +1120,10 @@ package_install_handle(struct blob_attr **rpc)
 	}
 
 	const char *op = blobmsg_get_string(tb_root[ROOT_OP]);
-    if (strcmp(op, "install") != 0 && strcmp(op, "delete") != 0) {
-        result_send_error(1, "invalid parameters: unrecognized operation", 1, id);
-        return;
-    }
+	if (strcmp(op, "install") != 0 && strcmp(op, "delete") != 0) {
+		result_send_error(1, "invalid parameters: unrecognized operation", 1, id);
+		return;
+	}
 
 	if (!tb_root[ROOT_PACKAGES]) {
 		result_send_error(1, "invalid parameters: missing packages array", 1, id);
@@ -1148,29 +1148,29 @@ package_install_handle(struct blob_attr **rpc)
 			return;
 		}
 
-		// if (escapePackageName(tb[PACKAGE_NAME]) == -1) {
+		// if (escape_package_name(tb[PACKAGE_NAME]) == -1) {
 		// 	result_send_error(1, "invalid parameters: invalid package name", 1, id);
 		// 	return;
 		// }
 
 		if (strcmp(op, "install") == 0) {
-            if (!tb[PACKAGE_URL]) {
-                result_send_error(1, "invalid parameters: missing package url for installation", 1, id);
-                return;
-            }
+			if (!tb[PACKAGE_URL]) {
+				result_send_error(1, "invalid parameters: missing package url for installation", 1, id);
+				return;
+			}
 
-            // Validate URL scheme (http or https)
-            const char *url = blobmsg_get_string(tb[PACKAGE_URL]);
-            if (!url || (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0)) {
-                result_send_error(1, "invalid parameters: package url must start with http:// or https://", 1, id);
-                return;
-            }
-        }
+			// Validate URL scheme (http or https)
+			const char *url = blobmsg_get_string(tb[PACKAGE_URL]);
+			if (!url || (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0)) {
+				result_send_error(1, "invalid parameters: package url must start with http:// or https://", 1, id);
+				return;
+			}
+		}
 
 		if (strcmp(op, "delete") == 0) {
 			if (!tb[PACKAGE_NAME]) {
 				result_send_error(1, "invalid parameters: missing package name for removal", 1, id);
-                return;
+				return;
 			}
 		}
 
@@ -1179,37 +1179,37 @@ package_install_handle(struct blob_attr **rpc)
 
 	void *m, *s, *p;
 	m = result_new_blob(id, uuid_active);
-    s = blobmsg_open_table(&result, "status");
-    p = blobmsg_open_array(&result, "packages");
+	s = blobmsg_open_table(&result, "status");
+	p = blobmsg_open_array(&result, "packages");
 
 	blobmsg_for_each_attr(cur, tb_root[ROOT_PACKAGES], rem) {
 		blobmsg_parse(package_policy, __PACKAGE_MAX, tb, blobmsg_data(cur), blobmsg_data_len(cur));
 
 		const char *pkg_name = blobmsg_get_string(tb[PACKAGE_NAME]);
-        const char *result_str = NULL;
-        void *pkg = blobmsg_open_table(&result, NULL);
+		const char *result_str = NULL;
+		void *pkg = blobmsg_open_table(&result, NULL);
 
-        if (!strcmp(op, "install")) {
-            const char *pkg_url = blobmsg_get_string(tb[PACKAGE_URL]);
-            result_str = installPackage(pkg_name, pkg_url);
-        } else if (!strcmp(op, "delete")) {
-            result_str = removePackage(pkg_name);
-        }
+		if (!strcmp(op, "install")) {
+			const char *pkg_url = blobmsg_get_string(tb[PACKAGE_URL]);
+			result_str = install_package(pkg_name, pkg_url);
+		} else if (!strcmp(op, "delete")) {
+			result_str = remove_package(pkg_name);
+		}
 
-        blobmsg_add_string(&result, "name", pkg_name);
-        blobmsg_add_string(&result, "result", result_str);
-        if (strcmp(result_str, "Success") != 0) {
-            error_count++;
-        }
-        blobmsg_close_table(&result, pkg);
+		blobmsg_add_string(&result, "name", pkg_name);
+		blobmsg_add_string(&result, "result", result_str);
+		if (strcmp(result_str, "Success") != 0) {
+			error_count++;
+		}
+		blobmsg_close_table(&result, pkg);
 	}
 
 	blobmsg_close_array(&result, p);
-    blobmsg_add_u32(&result, "error", error_count);
-    blobmsg_add_string(&result, "text", error_count ? "Some operations failed" : "Success");
-    blobmsg_close_table(&result, s);
-    blobmsg_close_table(&result, m);
-    result_send_blob();
+	blobmsg_add_u32(&result, "error", error_count);
+	blobmsg_add_string(&result, "text", error_count ? "Some operations failed" : "Success");
+	blobmsg_close_table(&result, s);
+	blobmsg_close_table(&result, m);
+	result_send_blob();
 }
 
 /*static void
@@ -1232,7 +1232,7 @@ transfer_handle(struct blob_attr **rpc)
 	FILE *fp;
 
 	blobmsg_parse(transfer_policy, __TRANSFER_MAX, tb, blobmsg_data(rpc[JSONRPC_PARAMS]),
-		      blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+			  blobmsg_data_len(rpc[JSONRPC_PARAMS]));
 
 	if (rpc[JSONRPC_ID])
 		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
@@ -1272,16 +1272,14 @@ proto_handle_blob(void)
 	}
 
 	if (!rpc[JSONRPC_VER] || (!rpc[JSONRPC_METHOD] && !rpc[JSONRPC_ERROR]) ||
-	    (rpc[JSONRPC_METHOD] && !rpc[JSONRPC_PARAMS]) ||
-	    strcmp(blobmsg_get_string(rpc[JSONRPC_VER]), "2.0")) {
+		(rpc[JSONRPC_METHOD] && !rpc[JSONRPC_PARAMS]) ||
+		strcmp(blobmsg_get_string(rpc[JSONRPC_VER]), "2.0")) {
 		log_send("received invalid jsonrpc call", LOG_ERR);
 		return;
 	}
 
 	if (rpc[JSONRPC_METHOD]) {
 		method = blobmsg_get_string(rpc[JSONRPC_METHOD]);
-
-		ULOG_DBG("RX: %s\n", method);
 
 		if (!strcmp(method, "configure"))
 			configure_handle(rpc);
