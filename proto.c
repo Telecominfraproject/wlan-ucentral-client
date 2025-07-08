@@ -1298,6 +1298,7 @@ proto_handle_blob(void)
 			 !strcmp(method, "rrm") ||
 			 !strcmp(method, "fixedconfig") ||
 			 !strcmp(method, "fingerprint") ||
+			 !strcmp(method, "reenroll") ||
 			 !strcmp(method, "trace"))
 			action_handle(rpc, method, 0, 1, 0, 0);
 		else if (!strcmp(method, "wifiscan"))
