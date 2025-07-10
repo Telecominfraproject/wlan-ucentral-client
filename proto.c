@@ -224,12 +224,12 @@ connect_send(void)
 		}
 		blobmsg_close_table(&proto, c);
 	}
-	if (!stat("/tmp/packages.json", &statbuf)) {
-		if (!blobmsg_add_json_from_file(&proto, "/tmp/packages.json")) {
-			log_send("failed to load packages", LOG_ERR);
-			return;
-		}
-	}
+	// if (!stat("/tmp/packages.json", &statbuf)) {
+	// 	if (!blobmsg_add_json_from_file(&proto, "/tmp/packages.json")) {
+	// 		log_send("failed to load packages", LOG_ERR);
+	// 		return;
+	// 	}
+	// }
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
 		log_send("failed to load capabilities", LOG_ERR);
