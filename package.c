@@ -4,7 +4,7 @@
 
 #include "ucentral.h"
 
-int escape_package_name(const char *name) 
+int cpm_name_escape(const char *name) 
 {
 	if (name == NULL || strlen(name) == 0)
 		return -1; // Invalid input
@@ -17,7 +17,7 @@ int escape_package_name(const char *name)
 	return 0;
 }
 
-int download_ipk(const char *name, const char *url)
+int ipk_download(const char *name, const char *url)
 {
 	char command[512];
 	snprintf(command, sizeof(command), "wget -O /tmp/cpm/%s.ipk %s", name, url);
@@ -25,7 +25,7 @@ int download_ipk(const char *name, const char *url)
 	return system(command);
 }
 
-int install_ipk(const char *name)
+int ipk_install(const char *name)
 {
 	char command[512];
 	snprintf(command, sizeof(command), "opkg install -i /tmp/cpm/%s.ipk --force-reinstall", name);
@@ -33,7 +33,7 @@ int install_ipk(const char *name)
 	return system(command);
 }
 
-int delete_ipk(const char *name)
+int ipk_delete(const char *name)
 {
 	char command[512];
 	snprintf(command, sizeof(command), "rm /tmp/cpm/%s.ipk", name);
@@ -41,7 +41,7 @@ int delete_ipk(const char *name)
 	return system(command);
 }
 
-int check_pkg(const char *name)
+int opkg_check(const char *name)
 {
 	char command[512];
 	snprintf(command, sizeof(command), "opkg list-installed | grep ^%s", name);
@@ -49,7 +49,7 @@ int check_pkg(const char *name)
 	return system(command);
 }
 
-int remove_pkg(const char *name)
+int opkg_remove(const char *name)
 {
 	char command[512];
 	snprintf(command, sizeof(command), "opkg remove %s", name);
@@ -57,10 +57,10 @@ int remove_pkg(const char *name)
 	return system(command);
 }
 
-const char *install_package(const char *pkgName, const char *pkgURL)
+const char *cpm_install(const char *pkgName, const char *pkgURL)
 {
-	int ret = download_ipk(pkgName, pkgURL);
-	ULOG_DBG("Function download_ipk returned with status %d", ret);
+	int ret = ipk_download(pkgName, pkgURL);
+	ULOG_DBG("Function ipk_download returned with status %d", ret);
 	if (ret) {
 		if (ret == (8 << 8))
 			return "Failed to download.";
@@ -68,8 +68,8 @@ const char *install_package(const char *pkgName, const char *pkgURL)
 		return "Unknown error.";
 	}
 
-	ret = install_ipk(pkgName);
-	ULOG_DBG("Function install_ipk returned with status %d", ret);
+	ret = ipk_install(pkgName);
+	ULOG_DBG("Function ipk_install returned with status %d", ret);
 	if (ret) {
 		if (ret == (255 << 8))
 			return "Failed to install package.";
@@ -77,14 +77,14 @@ const char *install_package(const char *pkgName, const char *pkgURL)
 		return "Unknown error.";
 	}
 
-	delete_ipk(pkgName);
+	ipk_delete(pkgName);
 	return "Success";
 }
 
-const char *remove_package(const char *pkgName)
+const char *cpm_remove(const char *pkgName)
 {
-	int ret = check_pkg(pkgName);
-	ULOG_DBG("Function check_pkg returned with status %d", ret);
+	int ret = opkg_check(pkgName);
+	ULOG_DBG("Function opkg_check returned with status %d", ret);
 	if (ret) {
 		if (ret == (1 << 8))
 			return "No such package.";
@@ -92,13 +92,28 @@ const char *remove_package(const char *pkgName)
 		return "Unknown error.";
 	}
 
-	ret = remove_pkg(pkgName);
-	ULOG_DBG("Function remove_pkg returned with status %d", ret);
+	ret = opkg_remove(pkgName);
+	ULOG_DBG("Function opkg_remove returned with status %d", ret);
 	if (ret) {
 		if (ret == (255 << 8))
 			return "Failed to remove package, please check dependency before proceeding.";
 
 		return "Unknown error.";
+	}
+
+	return "Success";
+}
+
+const char *cpm_list()
+{
+	int ret = system("opkg list-installed > /tmp/packages.state");
+	if (ret) {
+		return "Failed to dump opkg packages.";
+	}
+
+	ret = system("/usr/share/ucentral/package_list.uc");
+	if (ret) {
+		return "Failed to execute script /usr/share/ucentral/package.uc";
 	}
 
 	return "Success";

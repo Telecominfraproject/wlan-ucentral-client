@@ -224,12 +224,6 @@ connect_send(void)
 		}
 		blobmsg_close_table(&proto, c);
 	}
-	if (!stat("/tmp/packages.json", &statbuf)) {
-		if (!blobmsg_add_json_from_file(&proto, "/tmp/packages.json")) {
-			log_send("failed to load packages", LOG_ERR);
-			return;
-		}
-	}
 	c = blobmsg_open_table(&proto, "capabilities");
 	if (!blobmsg_add_json_from_file(&proto, path)) {
 		log_send("failed to load capabilities", LOG_ERR);
@@ -1069,7 +1063,7 @@ ping_handle(struct blob_attr **rpc)
 }
 
 static void
-package_install_handle(struct blob_attr **rpc)
+package_handle(struct blob_attr **rpc)
 {
 	enum {
 		PACKAGE_NAME,
@@ -1120,96 +1114,120 @@ package_install_handle(struct blob_attr **rpc)
 	}
 
 	const char *op = blobmsg_get_string(tb_root[ROOT_OP]);
-	if (strcmp(op, "install") != 0 && strcmp(op, "delete") != 0) {
+	if (strcmp(op, "install") && strcmp(op, "delete") && strcmp(op, "list")) {
 		result_send_error(1, "invalid parameters: unrecognized operation", 1, id);
 		return;
 	}
 
-	if (!tb_root[ROOT_PACKAGES]) {
-		result_send_error(1, "invalid parameters: missing packages array", 1, id);
-		return;
-	}
+	if (!strcmp(op, "list")) {
 
-	if (blobmsg_type(tb_root[ROOT_PACKAGES]) != BLOBMSG_TYPE_ARRAY) {
-		result_send_error(1, "invalid parameters: packages must be an array", 1, id);
-		return;
-	}
+		const char *result_str = cpm_list();
 
-	blobmsg_for_each_attr(cur, tb_root[ROOT_PACKAGES], rem) {
-		if (blobmsg_type(cur) != BLOBMSG_TYPE_TABLE) {
-			result_send_error(1, "invalid parameters: package array elements must be objects", 1, id);
-			return;
+		if (strcmp(result_str, "Success")) {
+			result_send_error(1, "Failed to generate package list.", 1, id);
 		}
 
-		blobmsg_parse(package_policy, __PACKAGE_MAX, tb, blobmsg_data(cur), blobmsg_data_len(cur));
+		void *m, *s;
+		m = result_new_blob(id, uuid_active);
+		s = blobmsg_open_table(&result, "status");
 
-		if (!tb[PACKAGE_NAME]) {
-			result_send_error(1, "invalid parameters: missing package name", 1, id);
-			return;
-		}
-
-		// if (escape_package_name(tb[PACKAGE_NAME]) == -1) {
-		// 	result_send_error(1, "invalid parameters: invalid package name", 1, id);
-		// 	return;
-		// }
-
-		if (strcmp(op, "install") == 0) {
-			if (!tb[PACKAGE_URL]) {
-				result_send_error(1, "invalid parameters: missing package url for installation", 1, id);
-				return;
-			}
-
-			// Validate URL scheme (http or https)
-			const char *url = blobmsg_get_string(tb[PACKAGE_URL]);
-			if (!url || (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0)) {
-				result_send_error(1, "invalid parameters: package url must start with http:// or https://", 1, id);
+		struct stat statbuf = { };
+		if (!stat("/tmp/packages.json", &statbuf)) {
+			if (!blobmsg_add_json_from_file(&result, "/tmp/packages.json")) {
+				log_send("failed to load packages", LOG_ERR);
 				return;
 			}
 		}
 
-		if (strcmp(op, "delete") == 0) {
+		blobmsg_add_string(&result, "text", "Success");
+		blobmsg_close_table(&result, s);
+		blobmsg_close_table(&result, m);
+		result_send_blob();
+	}
+	else {
+		if (!tb_root[ROOT_PACKAGES]) {
+			result_send_error(1, "invalid parameters: missing packages array", 1, id);
+			return;
+		}
+
+		if (blobmsg_type(tb_root[ROOT_PACKAGES]) != BLOBMSG_TYPE_ARRAY) {
+			result_send_error(1, "invalid parameters: packages must be an array", 1, id);
+			return;
+		}
+
+		blobmsg_for_each_attr(cur, tb_root[ROOT_PACKAGES], rem) {
+			if (blobmsg_type(cur) != BLOBMSG_TYPE_TABLE) {
+				result_send_error(1, "invalid parameters: package array elements must be objects", 1, id);
+				return;
+			}
+
+			blobmsg_parse(package_policy, __PACKAGE_MAX, tb, blobmsg_data(cur), blobmsg_data_len(cur));
+
 			if (!tb[PACKAGE_NAME]) {
-				result_send_error(1, "invalid parameters: missing package name for removal", 1, id);
+				result_send_error(1, "invalid parameters: missing package name", 1, id);
 				return;
 			}
+
+			if (!strcmp(op, "install")) {
+				if (!tb[PACKAGE_URL]) {
+					result_send_error(1, "invalid parameters: missing package url for installation", 1, id);
+					return;
+				}
+
+				// Validate URL scheme (http or https)
+				const char *url = blobmsg_get_string(tb[PACKAGE_URL]);
+				if (!url || (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0)) {
+					result_send_error(1, "invalid parameters: package url must start with http:// or https://", 1, id);
+					return;
+				}
+			}
+
+			if (!strcmp(op, "delete")) {
+				if (!tb[PACKAGE_NAME]) {
+					result_send_error(1, "invalid parameters: missing package name for removal", 1, id);
+					return;
+				}
+			}
+
+			ULOG_DBG("Processing package: name=%s, url=%s\n", blobmsg_get_string(tb[PACKAGE_NAME]), blobmsg_get_string(tb[PACKAGE_URL]));
 		}
 
-		ULOG_DBG("Processing package: name=%s, url=%s\n", blobmsg_get_string(tb[PACKAGE_NAME]), blobmsg_get_string(tb[PACKAGE_URL]));
+		void *m, *s, *p;
+		m = result_new_blob(id, uuid_active);
+		s = blobmsg_open_table(&result, "status");
+		p = blobmsg_open_array(&result, "packages");
+
+		blobmsg_for_each_attr(cur, tb_root[ROOT_PACKAGES], rem) {
+			blobmsg_parse(package_policy, __PACKAGE_MAX, tb, blobmsg_data(cur), blobmsg_data_len(cur));
+
+			const char *pkg_name = blobmsg_get_string(tb[PACKAGE_NAME]);
+			const char *result_str = NULL;
+			void *pkg = blobmsg_open_table(&result, NULL);
+
+			if (!strcmp(op, "install")) {
+				const char *pkg_url = blobmsg_get_string(tb[PACKAGE_URL]);
+				result_str = cpm_install(pkg_name, pkg_url);
+			} else if (!strcmp(op, "delete")) {
+				result_str = cpm_remove(pkg_name);
+			}
+
+			blobmsg_add_string(&result, "name", pkg_name);
+			blobmsg_add_string(&result, "result", result_str);
+			if (strcmp(result_str, "Success") != 0) {
+				error_count++;
+			}
+			blobmsg_close_table(&result, pkg);
+		}
+
+		blobmsg_close_array(&result, p);
+		blobmsg_add_u32(&result, "error", error_count);
+		blobmsg_add_string(&result, "text", error_count ? "Some operations failed" : "Success");
+		blobmsg_close_table(&result, s);
+		blobmsg_close_table(&result, m);
+		result_send_blob();
 	}
 
-	void *m, *s, *p;
-	m = result_new_blob(id, uuid_active);
-	s = blobmsg_open_table(&result, "status");
-	p = blobmsg_open_array(&result, "packages");
-
-	blobmsg_for_each_attr(cur, tb_root[ROOT_PACKAGES], rem) {
-		blobmsg_parse(package_policy, __PACKAGE_MAX, tb, blobmsg_data(cur), blobmsg_data_len(cur));
-
-		const char *pkg_name = blobmsg_get_string(tb[PACKAGE_NAME]);
-		const char *result_str = NULL;
-		void *pkg = blobmsg_open_table(&result, NULL);
-
-		if (!strcmp(op, "install")) {
-			const char *pkg_url = blobmsg_get_string(tb[PACKAGE_URL]);
-			result_str = install_package(pkg_name, pkg_url);
-		} else if (!strcmp(op, "delete")) {
-			result_str = remove_package(pkg_name);
-		}
-
-		blobmsg_add_string(&result, "name", pkg_name);
-		blobmsg_add_string(&result, "result", result_str);
-		if (strcmp(result_str, "Success") != 0) {
-			error_count++;
-		}
-		blobmsg_close_table(&result, pkg);
-	}
-
-	blobmsg_close_array(&result, p);
-	blobmsg_add_u32(&result, "error", error_count);
-	blobmsg_add_string(&result, "text", error_count ? "Some operations failed" : "Success");
-	blobmsg_close_table(&result, s);
-	blobmsg_close_table(&result, m);
-	result_send_blob();
+	
 }
 
 /*static void
@@ -1313,7 +1331,7 @@ proto_handle_blob(void)
 		else if (!strcmp(method, "venue_broadcast"))
 			venue_broadcast_handle(rpc[JSONRPC_PARAMS]);
 		else if (!strcmp(method, "package"))
-			package_install_handle(rpc);
+			package_handle(rpc);
 	}
 
 	if (rpc[JSONRPC_ERROR])
