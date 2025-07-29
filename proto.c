@@ -1142,9 +1142,9 @@ package_handle(struct blob_attr **rpc)
 		s = blobmsg_open_table(&result, "status");
 
 		struct stat statbuf = { };
-		if (!stat("/tmp/package.version", &statbuf)) {
+		if (!stat("/tmp/packages.state", &statbuf)) {
 			// Read the file content into a string
-			FILE *fp = fopen("/tmp/package.version", "r");
+			FILE *fp = fopen("/tmp/packages.state", "r");
 			if (!fp) {
 				log_send("failed to open package.version", LOG_ERR);
 				blobmsg_close_table(&result, s);
