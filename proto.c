@@ -1169,8 +1169,8 @@ package_handle(struct blob_attr **rpc)
 			char *encoded = b64(compressed, comp_len);
 
 			if (encoded) {
-				blobmsg_add_string(&proto, "compress_64", encoded);
-				blobmsg_add_u32(&proto, "compress_sz", orig_len);
+				blobmsg_add_string(&result, "compress_64", encoded);
+				blobmsg_add_u32(&result, "compress_sz", orig_len);
 				free(encoded);
 			} else {
 				ULOG_ERR("failed to compress stats");
