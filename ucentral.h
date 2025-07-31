@@ -144,7 +144,7 @@ void venue_broadcast_send(struct blob_attr *payload);
 
 const char *cpm_install(const char *pkgName, const char *pkgURL);
 const char *cpm_remove(const char *pkgName);
-const char *cpm_list(const char *pkgName);
+const char *cpm_list();
 int cpm_name_escape(const char *name);
 int ipk_download(const char *name, const char *url);
 int ipk_install(const char *name);

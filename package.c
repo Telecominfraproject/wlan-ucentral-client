@@ -112,14 +112,15 @@ const char *cpm_remove(const char *pkgName)
 	return "Success";
 }
 
-const char *cpm_list(const char *pkgName)
+const char *cpm_list()
 {
 	int ret = system("opkg list-installed > /tmp/packages.state");
 	if (ret) {
 		return "Failed to dump opkg packages.";
 	}
 
-	ret = opkg_search(pkgName);
+	//ret = opkg_search(pkgName);
+	ret = system("/usr/share/ucentral/package_list.uc");
 	if (ret) {
 		return "No such package";
 	}

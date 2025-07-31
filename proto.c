@@ -1131,10 +1131,10 @@ package_handle(struct blob_attr **rpc)
 			result_send_error(1, "invalid parameters: package must be a string", 1, id);
 			return;
 		}
-		const char *result_str = cpm_list(blobmsg_get_string(tb_root[ROOT_PACKAGE]));
+		const char *result_str = cpm_list();
 
 		if (strcmp(result_str, "Success")) {
-			result_send_error(1, "No such package.", 1, id);
+			result_send_error(1, result_str, 1, id);
 		}
 
 		void *m, *s;
@@ -1142,11 +1142,10 @@ package_handle(struct blob_attr **rpc)
 		s = blobmsg_open_table(&result, "status");
 
 		struct stat statbuf = { };
-		if (!stat("/tmp/package.version", &statbuf)) {
-			// Read the file content into a string
-			FILE *fp = fopen("/tmp/package.version", "r");
+		if (!stat("/tmp/packages.json", &statbuf)) {
+			FILE *fp = fopen("/tmp/packages.json", "r");
 			if (!fp) {
-				log_send("failed to open package.version", LOG_ERR);
+				log_send("failed to open packages.json", LOG_ERR);
 				blobmsg_close_table(&result, s);
 				blobmsg_close_table(&result, m);
 				return;
@@ -1154,7 +1153,7 @@ package_handle(struct blob_attr **rpc)
 
 			char *source = malloc(statbuf.st_size + 1);
 			if (!source) {
-				log_send("failed to allocate memory for package.version", LOG_ERR);
+				log_send("failed to allocate memory for packages.json", LOG_ERR);
 				fclose(fp);
 				blobmsg_close_table(&result, s);
 				blobmsg_close_table(&result, m);
@@ -1165,11 +1164,18 @@ package_handle(struct blob_attr **rpc)
 			fclose(fp);
 			source[read_size] = '\0';
 
-			// int comp_len = 0;
-			// char *compressed = comp(source, read_size, &comp_len);
-			// char *encoded = b64(compressed, comp_len);
+			int comp_len = 0, orig_len = strlen(source);
+			char *compressed = comp(source, read_size, &comp_len);
+			char *encoded = b64(compressed, comp_len);
 
-			blobmsg_add_string(&result, "package", source);
+			if (encoded) {
+				blobmsg_add_string(&proto, "compress_64", encoded);
+				blobmsg_add_u32(&proto, "compress_sz", orig_len);
+				free(encoded);
+			} else {
+				ULOG_ERR("failed to compress stats");
+				return;
+			}
 		}
 
 		blobmsg_add_string(&result, "text", "Success");
