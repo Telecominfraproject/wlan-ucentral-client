@@ -1134,7 +1134,7 @@ package_handle(struct blob_attr **rpc)
 		const char *result_str = cpm_list();
 
 		if (strcmp(result_str, "Success")) {
-			result_send_error(1, result_str, 1, id);
+			result_send_error(1, "Failed to generate package list", 1, id);
 		}
 
 		void *m, *s;
