@@ -1122,15 +1122,15 @@ package_handle(struct blob_attr **rpc)
 	}
 
 	if (!strcmp(op, "list")) {
-		if (!tb_root[ROOT_PACKAGE]) {
-			result_send_error(1, "invalid parameters: missing package name", 1, id);
-			return;
-		}
+		// if (!tb_root[ROOT_PACKAGE]) {
+		// 	result_send_error(1, "invalid parameters: missing package name", 1, id);
+		// 	return;
+		// }
 
-		if (blobmsg_type(tb_root[ROOT_PACKAGE]) != BLOBMSG_TYPE_STRING) {
-			result_send_error(1, "invalid parameters: package must be a string", 1, id);
-			return;
-		}
+		// if (blobmsg_type(tb_root[ROOT_PACKAGE]) != BLOBMSG_TYPE_STRING) {
+		// 	result_send_error(1, "invalid parameters: package must be a string", 1, id);
+		// 	return;
+		// }
 		const char *result_str = cpm_list();
 
 		if (strcmp(result_str, "Success")) {
