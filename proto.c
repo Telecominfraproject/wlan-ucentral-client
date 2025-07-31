@@ -1133,8 +1133,37 @@ package_handle(struct blob_attr **rpc)
 
 		struct stat statbuf = { };
 		if (!stat("/tmp/packages.json", &statbuf)) {
-			if (!blobmsg_add_json_from_file(&result, "/tmp/packages.json")) {
-				log_send("failed to load packages", LOG_ERR);
+			FILE *fp = fopen("/tmp/packages.json", "r");
+			if (!fp) {
+				log_send("failed to open packages.json", LOG_ERR);
+				blobmsg_close_table(&result, s);
+				blobmsg_close_table(&result, m);
+				return;
+			}
+
+			char *source = malloc(statbuf.st_size + 1);
+			if (!source) {
+				log_send("failed to allocate memory for packages.json", LOG_ERR);
+				fclose(fp);
+				blobmsg_close_table(&result, s);
+				blobmsg_close_table(&result, m);
+				return;
+			}
+
+			size_t read_size = fread(source, 1, statbuf.st_size, fp);
+			fclose(fp);
+			source[read_size] = '\0';
+
+			int comp_len = 0, orig_len = strlen(source);
+			char *compressed = comp(source, read_size, &comp_len);
+			char *encoded = b64(compressed, comp_len);
+
+			if (encoded) {
+				blobmsg_add_string(&proto, "compress_64", encoded);
+				blobmsg_add_u32(&proto, "compress_sz", orig_len);
+				free(encoded);
+			} else {
+				ULOG_ERR("failed to compress stats");
 				return;
 			}
 		}
