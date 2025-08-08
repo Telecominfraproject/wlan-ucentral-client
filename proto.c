@@ -217,6 +217,14 @@ connect_send(void)
 		}
 		blobmsg_close_table(&proto, c);
 	}
+	if (!stat("/etc/ucentral/discovery.state.json", &statbuf)) {
+		c = blobmsg_open_table(&proto, "discovery");
+		if (!blobmsg_add_json_from_file(&proto, "/etc/ucentral/discovery.state.json")) {
+			log_send("failed to load discovery state", LOG_ERR);
+			return;
+		}
+		blobmsg_close_table(&proto, c);
+	}
 	if (!stat("/tmp/udhcpc-vsi.json", &statbuf)) {
 		c = blobmsg_open_table(&proto, "udhcpc-vsi");
 		if (!blobmsg_add_json_from_file(&proto, "/tmp/udhcpc-vsi.json")) {
