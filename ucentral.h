@@ -142,6 +142,17 @@ void password_notify(char *pwd);
 void venue_broadcast_handle(struct blob_attr *rpc);
 void venue_broadcast_send(struct blob_attr *payload);
 
+const char *cpm_install(const char *pkgName, const char *pkgURL);
+const char *cpm_remove(const char *pkgName);
+const char *cpm_list(const char *pkgName);
+int cpm_name_escape(const char *name);
+int ipk_download(const char *name, const char *url);
+int ipk_install(const char *name);
+int ipk_delete(const char *name);
+int opkg_check(const char *name);
+int opkg_search(const char *name);
+int opkg_remove(const char *name);
+
 static inline void safe_free(char **mem)
 {
 	if (!*mem)
