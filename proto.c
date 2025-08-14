@@ -1045,6 +1045,213 @@ telemetry_handle(struct blob_attr **rpc)
 }
 
 static void
+package_handle(struct blob_attr **rpc)
+{
+	enum {
+		PACKAGE_NAME,
+		PACKAGE_URL,
+		PACKAGE_RESULT,
+		__PACKAGE_MAX,
+	};
+
+	enum {
+		ROOT_OP,
+		ROOT_PACKAGE,
+		ROOT_PACKAGES,
+		ROOT_SERIAL,
+		__ROOT_MAX,
+	};
+
+	static const struct blobmsg_policy package_policy[__PACKAGE_MAX] = {
+		[PACKAGE_NAME] = { .name = "name", .type = BLOBMSG_TYPE_STRING },
+		[PACKAGE_URL] = { .name = "url", .type = BLOBMSG_TYPE_STRING },
+		[PACKAGE_RESULT] = { .name = "result", .type = BLOBMSG_TYPE_STRING },
+	};
+
+	static const struct blobmsg_policy root_policy[__ROOT_MAX] = {
+		[ROOT_OP] = { .name = "op", .type = BLOBMSG_TYPE_STRING },
+		[ROOT_PACKAGE] = { .name = "package", .type = BLOBMSG_TYPE_STRING },
+		[ROOT_PACKAGES] = { .name = "packages", .type = BLOBMSG_TYPE_ARRAY },
+		[ROOT_SERIAL] = { .name = "serial", .type = BLOBMSG_TYPE_STRING },
+	};
+
+	struct blob_attr *tb_root[__ROOT_MAX] = {};
+	struct blob_attr *tb[__PACKAGE_MAX] = {};
+	struct blob_attr *cur;
+	uint32_t id = 0;
+	int rem;
+	int error_count = 0;
+
+	if (rpc[JSONRPC_ID])
+		id = blobmsg_get_u32(rpc[JSONRPC_ID]);
+
+	if (!rpc[JSONRPC_PARAMS]) {
+		result_send_error(1, "invalid parameters: params missing", 1, id);
+		return;
+	}
+
+	blobmsg_parse(root_policy, __ROOT_MAX, tb_root, blobmsg_data(rpc[JSONRPC_PARAMS]), blobmsg_data_len(rpc[JSONRPC_PARAMS]));
+
+	if (!tb_root[ROOT_OP]) {
+		result_send_error(1, "invalid parameters: missing operation", 1, id);
+		return;
+	}
+
+	const char *op = blobmsg_get_string(tb_root[ROOT_OP]);
+	if (strcmp(op, "install") && strcmp(op, "delete") && strcmp(op, "list")) {
+		result_send_error(1, "invalid parameters: unrecognized operation", 1, id);
+		return;
+	}
+
+	if (!strcmp(op, "list")) {
+		// if (!tb_root[ROOT_PACKAGE]) {
+		// 	result_send_error(1, "invalid parameters: missing package name", 1, id);
+		// 	return;
+		// }
+
+		// if (blobmsg_type(tb_root[ROOT_PACKAGE]) != BLOBMSG_TYPE_STRING) {
+		// 	result_send_error(1, "invalid parameters: package must be a string", 1, id);
+		// 	return;
+		// }
+		const char *result_str = cpm_list();
+
+		if (strcmp(result_str, "Success")) {
+			result_send_error(1, "Failed to generate package list", 1, id);
+		}
+
+		void *m, *s;
+		m = result_new_blob(id, uuid_active);
+		s = blobmsg_open_table(&result, "status");
+
+		struct stat statbuf = { };
+		if (!stat("/tmp/packages.json", &statbuf)) {
+			FILE *fp = fopen("/tmp/packages.json", "r");
+			if (!fp) {
+				log_send("failed to open packages.json", LOG_ERR);
+				blobmsg_close_table(&result, s);
+				blobmsg_close_table(&result, m);
+				return;
+			}
+
+			char *source = malloc(statbuf.st_size + 1);
+			if (!source) {
+				log_send("failed to allocate memory for packages.json", LOG_ERR);
+				fclose(fp);
+				blobmsg_close_table(&result, s);
+				blobmsg_close_table(&result, m);
+				return;
+			}
+
+			size_t read_size = fread(source, 1, statbuf.st_size, fp);
+			fclose(fp);
+			source[read_size] = '\0';
+
+			int comp_len = 0, orig_len = strlen(source);
+			char *compressed = comp(source, read_size, &comp_len);
+			char *encoded = b64(compressed, comp_len);
+
+			if (encoded) {
+				blobmsg_add_string(&result, "compress_64", encoded);
+				blobmsg_add_u32(&result, "compress_sz", orig_len);
+				free(encoded);
+			} else {
+				ULOG_ERR("failed to compress stats");
+				return;
+			}
+		}
+
+		blobmsg_add_string(&result, "text", "Success");
+		blobmsg_close_table(&result, s);
+		blobmsg_close_table(&result, m);
+		result_send_blob();
+	}
+	else {
+		if (!tb_root[ROOT_PACKAGES]) {
+			result_send_error(1, "invalid parameters: missing packages array", 1, id);
+			return;
+		}
+
+		if (blobmsg_type(tb_root[ROOT_PACKAGES]) != BLOBMSG_TYPE_ARRAY) {
+			result_send_error(1, "invalid parameters: packages must be an array", 1, id);
+			return;
+		}
+
+		blobmsg_for_each_attr(cur, tb_root[ROOT_PACKAGES], rem) {
+			if (blobmsg_type(cur) != BLOBMSG_TYPE_TABLE) {
+				result_send_error(1, "invalid parameters: package array elements must be objects", 1, id);
+				return;
+			}
+
+			blobmsg_parse(package_policy, __PACKAGE_MAX, tb, blobmsg_data(cur), blobmsg_data_len(cur));
+
+			if (!tb[PACKAGE_NAME]) {
+				result_send_error(1, "invalid parameters: missing package name", 1, id);
+				return;
+			}
+
+			if (!strcmp(op, "install")) {
+				if (!tb[PACKAGE_URL]) {
+					result_send_error(1, "invalid parameters: missing package url for installation", 1, id);
+					return;
+				}
+
+				// Validate URL scheme (http or https)
+				const char *url = blobmsg_get_string(tb[PACKAGE_URL]);
+				if (!url || (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0)) {
+					result_send_error(1, "invalid parameters: package url must start with http:// or https://", 1, id);
+					return;
+				}
+			}
+
+			if (!strcmp(op, "delete")) {
+				if (!tb[PACKAGE_NAME]) {
+					result_send_error(1, "invalid parameters: missing package name for removal", 1, id);
+					return;
+				}
+			}
+
+			ULOG_DBG("Processing package: name=%s, url=%s\n", blobmsg_get_string(tb[PACKAGE_NAME]), blobmsg_get_string(tb[PACKAGE_URL]));
+		}
+
+		void *m, *s, *p;
+		m = result_new_blob(id, uuid_active);
+		s = blobmsg_open_table(&result, "status");
+		p = blobmsg_open_array(&result, "packages");
+
+		blobmsg_for_each_attr(cur, tb_root[ROOT_PACKAGES], rem) {
+			blobmsg_parse(package_policy, __PACKAGE_MAX, tb, blobmsg_data(cur), blobmsg_data_len(cur));
+
+			const char *pkg_name = blobmsg_get_string(tb[PACKAGE_NAME]);
+			const char *result_str = NULL;
+			void *pkg = blobmsg_open_table(&result, NULL);
+
+			if (!strcmp(op, "install")) {
+				const char *pkg_url = blobmsg_get_string(tb[PACKAGE_URL]);
+				result_str = cpm_install(pkg_name, pkg_url);
+			} else if (!strcmp(op, "delete")) {
+				result_str = cpm_remove(pkg_name);
+			}
+
+			blobmsg_add_string(&result, "name", pkg_name);
+			blobmsg_add_string(&result, "result", result_str);
+			if (strcmp(result_str, "Success") != 0) {
+				error_count++;
+			}
+			blobmsg_close_table(&result, pkg);
+		}
+
+		blobmsg_close_array(&result, p);
+		blobmsg_add_u32(&result, "error", error_count);
+		blobmsg_add_string(&result, "text", error_count ? "Some operations failed" : "Success");
+		blobmsg_close_table(&result, s);
+		blobmsg_close_table(&result, m);
+		result_send_blob();
+	}
+
+	return;
+}
+
+static void
 ping_handle(struct blob_attr **rpc)
 {
 	uint32_t id = 0;
