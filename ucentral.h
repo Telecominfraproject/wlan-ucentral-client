@@ -33,6 +33,8 @@ struct client_config {
 	const char *path;
 	const char *serial;
 	const char *firmware;
+	const char *ca;
+	const char *cert;
 	int selfsigned;
 	int debug;
 	int recovery;

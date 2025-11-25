@@ -50,6 +50,8 @@ struct client_config client = {
 	.firmware = "v1.0",
 	.debug = 0,
 	.hostname_validate = 0,
+	.cert = UCENTRAL_CONFIG"operational.pem",
+	.ca = UCENTRAL_CONFIG"operational.ca",
 };
 
 void
@@ -330,7 +332,10 @@ static int print_usage(const char *daemon)
 			"\t-f <firmware>\n"
 			"\t-h <hostname validation>\n"
 			"\t-r <boot in recovery mode>\n"
-			"\t-v <venue>\n", daemon);
+			"\t-v <venue>\n"
+			"\t-c <cert>\n"
+			"\t-C <CA>\n",
+			daemon);
 	return -1;
 }
 
@@ -343,7 +348,7 @@ int main(int argc, char **argv)
 	int ch;
 	int apply = 1;
 
-	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:dirc:h")) != -1) {
+	while ((ch = getopt(argc, argv, "S:s:P:v:f:H:dirb:c:C:h")) != -1) {
 		switch (ch) {
 		case 's':
 			client.server = optarg;
@@ -364,8 +369,14 @@ int main(int argc, char **argv)
 		case 'S':
 			client.serial = optarg;
 			break;
-		case 'c':
+		case 'b':
 			client.boot_cause = optarg;
+			break;
+		case 'c':
+			client.cert = optarg;
+			break;
+		case 'C':
+			client.ca = optarg;
 			break;
 		case 'i':
 			client.selfsigned = 1;
@@ -414,10 +425,10 @@ int main(int argc, char **argv)
 	memset(&info, 0, sizeof info);
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-	info.client_ssl_cert_filepath = UCENTRAL_CONFIG"operational.pem";
+	info.client_ssl_cert_filepath = client.cert;
 	if (!stat(UCENTRAL_CONFIG"key.pem", &st))
 		info.client_ssl_private_key_filepath = UCENTRAL_CONFIG"key.pem";
-	info.ssl_ca_filepath = UCENTRAL_CONFIG"operational.ca";
+	info.ssl_ca_filepath = client.ca;
 	info.protocols = protocols;
 	info.fd_limit_per_thread = 1 + 1 + 1;
         info.connect_timeout_secs = 30;
