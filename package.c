@@ -17,58 +17,58 @@ int cpm_name_escape(const char *name)
 	return 0;
 }
 
-int ipk_download(const char *name, const char *url)
+int apk_download(const char *name, const char *url)
 {
 	char command[512];
-	snprintf(command, sizeof(command), "wget -O /tmp/cpm/%s.ipk %s", name, url);
+	snprintf(command, sizeof(command), "wget -O /tmp/cpm/%s.apk %s", name, url);
 
 	return system(command);
 }
 
-int ipk_install(const char *name)
+int apk_install(const char *name)
 {
 	char command[512];
-	snprintf(command, sizeof(command), "opkg install -i /tmp/cpm/%s.ipk --force-reinstall", name);
+	snprintf(command, sizeof(command), "apk add --allow-untrusted /tmp/cpm/%s.apk", name);
 
 	return system(command);
 }
 
-int ipk_delete(const char *name)
+int apk_delete(const char *name)
 {
 	char command[512];
-	snprintf(command, sizeof(command), "rm /tmp/cpm/%s.ipk", name);
+	snprintf(command, sizeof(command), "rm /tmp/cpm/%s.apk", name);
 
 	return system(command);
 }
 
-int opkg_check(const char *name)
+int apk_check(const char *name)
 {
 	char command[512];
-	snprintf(command, sizeof(command), "opkg list-installed | grep ^%s", name);
+	snprintf(command, sizeof(command), "apk info -e %s", name);
 
 	return system(command);
 }
 
-int opkg_remove(const char *name)
+int apk_remove(const char *name)
 {
 	char command[512];
-	snprintf(command, sizeof(command), "opkg remove %s", name);
+	snprintf(command, sizeof(command), "apk del %s", name);
 
 	return system(command);
 }
 
-int opkg_search(const char *name)
+int apk_search(const char *name)
 {
 	char command[512];
-	snprintf(command, sizeof(command), "opkg list-installed | grep \"^%s - \" > /tmp/package.version", name);
+	snprintf(command, sizeof(command), "apk list -I %s > /tmp/package.version", name);
 
 	return system(command);
 }
 
 const char *cpm_install(const char *pkgName, const char *pkgURL)
 {
-	int ret = ipk_download(pkgName, pkgURL);
-	ULOG_DBG("Function ipk_download returned with status %d", ret);
+	int ret = apk_download(pkgName, pkgURL);
+	ULOG_DBG("Function apk_download returned with status %d", ret);
 	if (ret) {
 		if (ret == (8 << 8))
 			return "Failed to download.";
@@ -76,8 +76,8 @@ const char *cpm_install(const char *pkgName, const char *pkgURL)
 		return "Unknown error.";
 	}
 
-	ret = ipk_install(pkgName);
-	ULOG_DBG("Function ipk_install returned with status %d", ret);
+	ret = apk_install(pkgName);
+	ULOG_DBG("Function apk_install returned with status %d", ret);
 	if (ret) {
 		if (ret == (255 << 8))
 			return "Failed to install package.";
@@ -85,14 +85,14 @@ const char *cpm_install(const char *pkgName, const char *pkgURL)
 		return "Unknown error.";
 	}
 
-	ipk_delete(pkgName);
+	apk_delete(pkgName);
 	return "Success";
 }
 
 const char *cpm_remove(const char *pkgName)
 {
-	int ret = opkg_check(pkgName);
-	ULOG_DBG("Function opkg_check returned with status %d", ret);
+	int ret = apk_check(pkgName);
+	ULOG_DBG("Function apk_check returned with status %d", ret);
 	if (ret) {
 		if (ret == (1 << 8))
 			return "No such package.";
@@ -100,8 +100,8 @@ const char *cpm_remove(const char *pkgName)
 		return "Unknown error.";
 	}
 
-	ret = opkg_remove(pkgName);
-	ULOG_DBG("Function opkg_remove returned with status %d", ret);
+	ret = apk_remove(pkgName);
+	ULOG_DBG("Function apk_remove returned with status %d", ret);
 	if (ret) {
 		if (ret == (255 << 8))
 			return "Failed to remove package, please check dependency before proceeding.";
@@ -114,12 +114,12 @@ const char *cpm_remove(const char *pkgName)
 
 const char *cpm_list(const char *pkgName)
 {
-	int ret = system("opkg list-installed > /tmp/packages.state");
+	int ret = system("apk list -I > /tmp/packages.state");
 	if (ret) {
-		return "Failed to dump opkg packages.";
+		return "Failed to dump installed packages.";
 	}
 
-	ret = opkg_search(pkgName);
+	ret = apk_search(pkgName);
 	if (ret) {
 		return "No such package";
 	}
