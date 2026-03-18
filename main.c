@@ -89,6 +89,7 @@ validate_CN(char *CN)
 	int CN_len;
 	int server_len;
 	int ret;
+	int prefix_len;
 
 	if (!strcmp(client.server, CN))
 		return 0;
@@ -103,10 +104,16 @@ validate_CN(char *CN)
 
 	ret = strcmp(&CN[1], &client.server[server_len - CN_len + 1]);
 
-	if (!ret)
-		ULOG_INFO("server is using a wildcard certificate\n");
+	if (ret)
+		return ret;
 
-	return ret;
+	prefix_len = server_len - CN_len + 1;
+	if (memchr(client.server, '.', prefix_len))
+		return -1;
+
+	ULOG_INFO("server is using a wildcard certificate\n");
+
+	return 0;
 }
 
 static void
