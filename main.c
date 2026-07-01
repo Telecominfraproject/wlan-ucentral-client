@@ -6,6 +6,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
+
 #include <libubox/uloop.h>
 
 #include "ucentral.h"
@@ -84,28 +87,79 @@ get_reconnect_timeout(void)
 }
 
 static int
-validate_CN(char *CN)
+match_hostname(const char *name)
 {
-	int CN_len;
+	int name_len;
 	int server_len;
 	int ret;
 
-	if (!strcmp(client.server, CN))
+	if (!strcmp(client.server, name))
 		return 0;
-	if (strncmp(CN, "*.", 2))
+	if (strncmp(name, "*.", 2))
 		return -1;
 
-	CN_len = strlen(CN);
+	name_len = strlen(name);
 	server_len = strlen(client.server);
 
-	if (server_len < CN_len)
+	if (server_len < name_len)
 		return -1;
 
-	ret = strcmp(&CN[1], &client.server[server_len - CN_len + 1]);
+	ret = strcmp(&name[1], &client.server[server_len - name_len + 1]);
 
 	if (!ret)
 		ULOG_INFO("server is using a wildcard certificate\n");
 
+	return ret;
+}
+
+static int
+validate_SAN(struct lws *wsi)
+{
+	SSL *ssl = lws_get_ssl(wsi);
+	GENERAL_NAMES *sans;
+	X509 *cert;
+	int n, count;
+	int ret = -1;
+
+	if (!ssl)
+		return -1;
+
+	cert = SSL_get_peer_certificate(ssl);
+	if (!cert)
+		return -1;
+
+	sans = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
+	if (!sans)
+		goto out;
+
+	count = sk_GENERAL_NAME_num(sans);
+	for (n = 0; n < count && ret; n++) {
+		const GENERAL_NAME *gn = sk_GENERAL_NAME_value(sans, n);
+		const unsigned char *data;
+		char dns[256];
+		int len;
+
+		if (gn->type != GEN_DNS)
+			continue;
+
+		data = ASN1_STRING_get0_data(gn->d.dNSName);
+		len = ASN1_STRING_length(gn->d.dNSName);
+		if (len <= 0 || len >= (int)sizeof(dns))
+			continue;
+		if (memchr(data, '\0', len))
+			continue;
+
+		memcpy(dns, data, len);
+		dns[len] = '\0';
+
+		ULOG_INFO(" Peer Cert SAN       : %s\n", dns);
+		if (!match_hostname(dns))
+			ret = 0;
+	}
+
+	GENERAL_NAMES_free(sans);
+out:
+	X509_free(cert);
 	return ret;
 }
 
@@ -233,8 +287,8 @@ callback_broker(struct lws *wsi, enum lws_callback_reasons reason,
 			if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_COMMON_NAME, &ci, sizeof(ci.ns.name)))
 				ULOG_INFO(" Peer Cert CN        : %s\n", ci.ns.name);
 
-			if (validate_CN(ci.ns.name)) {
-				ULOG_INFO("CN does not match");
+			if (match_hostname(ci.ns.name) && validate_SAN(wsi)) {
+				ULOG_INFO("hostname does not match (CN/SAN)");
 				bad_CN = 1;
 			//	lws_wsi_close(wsi, LWS_TO_KILL_SYNC);
 				return -1;

@@ -17,13 +17,15 @@ FIND_LIBRARY(ubus NAMES ubus)
 FIND_LIBRARY(blobmsg_json NAMES blobmsg_json)
 FIND_LIBRARY(ubox NAMES ubox)
 FIND_LIBRARY(websockets NAMES websockets)
+FIND_LIBRARY(ssl NAMES ssl)
+FIND_LIBRARY(crypto NAMES crypto)
 FIND_PATH(ubus_include_dir NAMES libubus.h)
 FIND_PATH(libwebsockets_include_dir NAMES libwebsockets.h)
 INCLUDE_DIRECTORIES(${ubox_include_dir} ${ubus_include_dir} ${libwebsockets_include_dir})
 
 ADD_EXECUTABLE(ucentral ${SOURCES})
 
-TARGET_LINK_LIBRARIES(ucentral ${ubox} ${ubus} ${websockets} ${blobmsg_json} z)
+TARGET_LINK_LIBRARIES(ucentral ${ubox} ${ubus} ${websockets} ${blobmsg_json} ${ssl} ${crypto} z)
 
 INSTALL(TARGETS ucentral
 	RUNTIME DESTINATION sbin
