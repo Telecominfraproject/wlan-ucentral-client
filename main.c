@@ -92,6 +92,7 @@ match_hostname(const char *name)
 	int name_len;
 	int server_len;
 	int ret;
+	int prefix_len;
 
 	if (!strcmp(client.server, name))
 		return 0;
@@ -106,10 +107,16 @@ match_hostname(const char *name)
 
 	ret = strcmp(&name[1], &client.server[server_len - name_len + 1]);
 
-	if (!ret)
-		ULOG_INFO("server is using a wildcard certificate\n");
+	if (ret)
+		return ret;
 
-	return ret;
+	prefix_len = server_len - CN_len + 1;
+	if (memchr(client.server, '.', prefix_len))
+		return -1;
+
+	ULOG_INFO("server is using a wildcard certificate\n");
+
+	return 0;
 }
 
 static int
